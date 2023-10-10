@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class FacebookServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(FacebookServiceApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(FacebookServiceApplication.class, args);
+    }
 
 }
