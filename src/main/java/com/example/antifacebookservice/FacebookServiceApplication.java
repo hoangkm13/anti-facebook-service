@@ -1,4 +1,4 @@
-package com.example.facebookservice;
+package com.example.antifacebookservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
