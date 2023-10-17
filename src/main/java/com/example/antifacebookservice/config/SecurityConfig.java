@@ -1,6 +1,6 @@
 package com.example.antifacebookservice.config;
 
-import com.example.codelabsvc.security.AuthFilter;
+import com.example.antifacebookservice.security.AuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
