@@ -48,7 +48,7 @@ public class AuthFilter extends OncePerRequestFilter {
                 String username = tokenUtils.verifyToken(token);
                 User User = userService.findByUsername(username);
                 List<GrantedAuthority> authorities = new ArrayList<>();
-                authorities.add(new SimpleGrantedAuthority(User.getRole()));
+//                authorities.add(new SimpleGrantedAuthority(User.getRole()));
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(User.getId(), User, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 filterChain.doFilter(request, response);

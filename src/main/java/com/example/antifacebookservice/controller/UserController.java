@@ -57,8 +57,8 @@ public class UserController {
     }
 
     @PostMapping(value = "/register", produces = "application/json")
-    public ApiResponse<UserDTO> register(@Valid @RequestBody UserDTO UserDTO) throws CustomException {
-        var User = userService.createUser(UserDTO);
+    public ApiResponse<UserDTO> register(@Valid @RequestBody SignUpDTO signUpDTO) throws CustomException {
+        var User = userService.createUser(signUpDTO);
         return ApiResponse.successWithResult(modelMapper.map(User, UserDTO.class));
     }
 

@@ -3,6 +3,7 @@ package com.example.antifacebookservice.service.impl;
 import com.example.antifacebookservice.constant.ErrorCode;
 import com.example.antifacebookservice.constant.Role;
 import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
+import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
 import com.example.antifacebookservice.controller.request.auth.UpdateUserDTO;
 import com.example.antifacebookservice.controller.request.auth.UserDTO;
 import com.example.antifacebookservice.entity.User;
@@ -47,8 +48,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         }
         User User = optionalUser.get();
         List<GrantedAuthority> authorities = new ArrayList<>();
-        GrantedAuthority authority = new SimpleGrantedAuthority(User.getRole());
-        authorities.add(authority);
+//        GrantedAuthority authority = new SimpleGrantedAuthority(User.getRole());
+//        authorities.add(authority);
         return new org.springframework.security.core.userdetails.User(User.getUsername(), User.getPasswordHash(), authorities);
     }
 
@@ -67,26 +68,23 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public User createUser(UserDTO UserDTO) throws CustomException {
-        if (userRepository.existsByUsername(UserDTO.getUsername())) {
-            throw new CustomException(ErrorCode.USERNAME_EXIST);
-        }
-        if (userRepository.existsByEmail(UserDTO.getEmail())) {
+    public User createUser(SignUpDTO signUpDTO) throws CustomException {
+        if (userRepository.existsByEmail(signUpDTO.getEmail())) {
             throw new CustomException(ErrorCode.EMAIL_EXIST);
         }
 
-        User User = new User();
-        User.setId(UUID.randomUUID().toString());
-        User.setGender(UserDTO.getGender());
-        User.setBirthOfDate(UserDTO.getBirthOfDate());
-        User.setMobile(UserDTO.getMobile());
-        User.setRole(Role.USER.getValue());
-        User.setUsername(UserDTO.getUsername());
-        User.setEmail(UserDTO.getEmail());
-        User.setFirstName(UserDTO.getFirstName());
-        User.setLastName(UserDTO.getLastName());
-        User.setCountry(UserDTO.getCountry());
-        User.setPasswordHash(passwordEncoder.encode(UserDTO.getPassword()));
+        User user = new User();
+        user.setId(UUID.randomUUID().toString());
+//        User.setGender(UserDTO.getGender());
+//        User.setBirthOfDate(UserDTO.getBirthOfDate());
+//        User.setMobile(UserDTO.getMobile());
+//        User.setRole(Role.USER.getValue());
+        user.setUsername(signUpDTO.getEmail());
+        user.setEmail(signUpDTO.getEmail());
+//        User.setFirstName(signUpDTO.getFirstName());
+//        User.setLastName(signUpDTO.getLastName());
+//        User.setCountry(signUpDTO.getCountry());
+        user.setPasswordHash(passwordEncoder.encode(signUpDTO.getPassword()));
 
 //        notificationRepository.save(new Notification(null,
 //                null,
@@ -95,7 +93,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 //                "feb0978d-b7b6-4bb9-9a85-96f9cc0ed5de",
 //                ""));
 
-        return userRepository.save(User);
+        return userRepository.save(user);
     }
 
     @Override
@@ -145,18 +143,18 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
 //        FileUtils fileUtils = new FileUtils();
 
-        existedUser.setGender(updateUserDTO.getGender() != null ? updateUserDTO.getGender() : existedUser.getGender());
-        existedUser.setBirthOfDate(updateUserDTO.getBirthOfDate() != null ? updateUserDTO.getBirthOfDate() : existedUser.getBirthOfDate());
-        existedUser.setMobile(updateUserDTO.getMobile() != null ? updateUserDTO.getMobile() : existedUser.getMobile());
+//        existedUser.setGender(updateUserDTO.getGender() != null ? updateUserDTO.getGender() : existedUser.getGender());
+//        existedUser.setBirthOfDate(updateUserDTO.getBirthOfDate() != null ? updateUserDTO.getBirthOfDate() : existedUser.getBirthOfDate());
+//        existedUser.setMobile(updateUserDTO.getMobile() != null ? updateUserDTO.getMobile() : existedUser.getMobile());
         existedUser.setEmail(updateUserDTO.getEmail() != null ? updateUserDTO.getEmail() : existedUser.getEmail());
-        existedUser.setFirstName(updateUserDTO.getFirstName() != null ? updateUserDTO.getFirstName() : existedUser.getFirstName());
-        existedUser.setLastName(updateUserDTO.getLastName() != null ? updateUserDTO.getLastName() : existedUser.getLastName());
+//        existedUser.setFirstName(updateUserDTO.getFirstName() != null ? updateUserDTO.getFirstName() : existedUser.getFirstName());
+//        existedUser.setLastName(updateUserDTO.getLastName() != null ? updateUserDTO.getLastName() : existedUser.getLastName());
         existedUser.setEmail(updateUserDTO.getEmail() != null ? updateUserDTO.getEmail() : existedUser.getEmail());
-        existedUser.setGithub(updateUserDTO.getGithub() != null ? updateUserDTO.getGithub() : existedUser.getGithub());
-        existedUser.setFacebook(updateUserDTO.getFacebook() != null ? updateUserDTO.getFacebook() : existedUser.getFacebook());
-        existedUser.setWebsite(updateUserDTO.getWebsite() != null ? updateUserDTO.getWebsite() : existedUser.getWebsite());
+//        existedUser.setGithub(updateUserDTO.getGithub() != null ? updateUserDTO.getGithub() : existedUser.getGithub());
+//        existedUser.setFacebook(updateUserDTO.getFacebook() != null ? updateUserDTO.getFacebook() : existedUser.getFacebook());
+//        existedUser.setWebsite(updateUserDTO.getWebsite() != null ? updateUserDTO.getWebsite() : existedUser.getWebsite());
         existedUser.setAvatar(existedUser.getId());
-        existedUser.setCountry(updateUserDTO.getCountry() != null ? updateUserDTO.getCountry() : existedUser.getCountry());
+//        existedUser.setCountry(updateUserDTO.getCountry() != null ? updateUserDTO.getCountry() : existedUser.getCountry());
 
 //        if(avatarFile != null && !avatarFile.isEmpty()){
 //            fileUtils.createFileSave(avatarFile, FileConfig.PRE_PATH_AVATAR, existedUser.getId() + ".jpg");

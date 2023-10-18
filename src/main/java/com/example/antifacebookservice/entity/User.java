@@ -22,31 +22,36 @@ public class User {
 
     private String username;
 
-    private String firstName;
-
-    private String lastName;
+//    private String firstName;
+//
+//    private String lastName;
 
     private String avatar;
+//    private Boolean avatar;
 
-    @NotBlank(message = "Giới tính không được để trống !")
-    private String gender;
-
-    private String birthOfDate;
-
-    private String mobile;
-
+//    @NotBlank(message = "Giới tính không được để trống !")
+//    private String gender;
+//
+//    private String birthOfDate;
+//
+//    private String mobile;
+//
     private String passwordHash;
-
-    private String role;
-
-    private String website;
-
-    private String github;
-
-    private String facebook;
+//
+//    private String role;
+//
+//    private String website;
+//
+//    private String github;
+//
+//    private String facebook;
 
     private String email;
 
-    private String country;
+    private String coins;
+
+    private Boolean active;
+
+//    private String country;
 
 }
