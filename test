@@ -1,64 +1,68 @@
-I apologize for the confusion. The previous code example does not accurately reflect the capabilities of the JSON-P library for schema validation. The JSON-P library itself does not provide built-in support for schema validation with properties like "isRequired" or "append."
-
-To perform more advanced schema validation in Java, you might consider using third-party libraries such as:
-
-1. **Jackson**: Jackson is a popular JSON library for Java that provides support for JSON schema validation. You can use the `com.github.fge.jsonschema.main.JsonSchemaFactory` class to create a JSON schema factory and validate your JSON data against a schema. Here's an example:
-
-```java
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.fge.jsonschema.main.JsonSchema;
-import com.github.fge.jsonschema.main.JsonSchemaFactory;
-import com.github.fge.jsonschema.core.report.ProcessingReport;
-
-// ...
-
-ObjectMapper objectMapper = new ObjectMapper();
-JsonNode schemaNode = objectMapper.readTree(new File("schema.json"));
-JsonNode instanceNode = objectMapper.readTree(new File("data.json"));
-
-JsonSchemaFactory schemaFactory = JsonSchemaFactory.byDefault();
-JsonSchema schema = schemaFactory.getJsonSchema(schemaNode);
-
-ProcessingReport report = schema.validate(instanceNode);
-if (report.isSuccess()) {
-    System.out.println("Validation successful: instance data is valid.");
-} else {
-    System.out.println("Validation failed. Errors:");
-    System.out.println(report);
-}
-```
-
-In this example, you would need to include the Jackson libraries in your project's dependencies.
-
-2. **Gson**: Gson is another popular JSON library for Java. However, it does not provide direct support for JSON schema validation. You may need to use an additional library, such as `json-schema-validator` by Everit, to perform schema validation with Gson. Here's an example:
+Sure! Here's an example of how you can validate a JSON object against a JSON schema using Java 11 and the Gson library:
 
 ```java
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.everit.json.schema.Schema;
-import com.everit.json.schema.loader.SchemaLoader;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
 
-// ...
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Set;
 
-Gson gson = new GsonBuilder().create();
+public class JsonSchemaValidator {
+    public static void main(String[] args) {
+        // Load the JSON schema
+        InputStream schemaInputStream = JsonSchemaValidator.class.getResourceAsStream("/path/to/schema.json");
+        InputStreamReader schemaReader = new InputStreamReader(schemaInputStream);
 
-JsonObject schemaObject = JsonParser.parseReader(new FileReader("schema.json")).getAsJsonObject();
-JsonObject instanceObject = JsonParser.parseReader(new FileReader("data.json")).getAsJsonObject();
+        // Load the JSON data to validate
+        InputStream dataInputStream = JsonSchemaValidator.class.getResourceAsStream("/path/to/data.json");
+        InputStreamReader dataReader = new InputStreamReader(dataInputStream);
 
-JSONObject schemaJson = new JSONObject(schemaObject.toString());
-JSONObject instanceJson = new JSONObject(instanceObject.toString());
+        // Parse the JSON schema
+        JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7);
+        JsonSchema schema = schemaFactory.getSchema(schemaReader);
 
-Schema schema = SchemaLoader.load(schemaJson);
-schema.validate(instanceJson); // Throws an exception if validation fails
+        // Parse the JSON data
+        JsonParser parser = new JsonParser();
+        JsonObject data = parser.parse(dataReader).getAsJsonObject();
 
-System.out.println("Validation successful: instance data is valid.");
+        // Validate the JSON data against the schema
+        Set<ValidationMessage> validationResult = schema.validate(data);
+
+        // Print validation errors, if any
+        if (!validationResult.isEmpty()) {
+            for (ValidationMessage error : validationResult) {
+                System.out.println(error.getMessage());
+            }
+        } else {
+            System.out.println("JSON data is valid against the schema.");
+        }
+    }
+}
 ```
 
-In this example, you would need to include the Gson and `json-schema-validator` libraries in your project's dependencies.
+Make sure to replace `/path/to/schema.json` with the actual path to your JSON schema file, and `/path/to/data.json` with the actual path to the JSON data file you want to validate.
 
-Please note that in both cases, you need to provide the paths to your JSON schema file and instance data file, and you'll need to adjust the code accordingly to match your specific requirements and the structure of your JSON schema.
+This example uses the Gson library to parse and validate JSON data. It also uses the `networknt/schema` library to perform the JSON schema validation. You can include the Gson and networknt/schema libraries in your project by adding the following dependencies to your `pom.xml` file if you're using Maven:
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>2.8.9</version>
+    </dependency>
+    <dependency>
+        <groupId>com.networknt</groupId>
+        <artifactId>json-schema-validator</artifactId>
+        <version>1.0.53</version>
+    </dependency>
+</dependencies>
+```
+
+Once you have the dependencies set up and the code in place, you can run the `main` method to validate your JSON data against the schema.
