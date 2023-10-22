@@ -1,6 +1,8 @@
 package com.example.antifacebookservice.controller;
 
+import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.controller.request.auth.*;
+import com.example.antifacebookservice.controller.response.SignUpResponse;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.model.ApiResponse;
@@ -38,9 +40,9 @@ public class UserController {
 
     @PostMapping(value = "/login", produces = "application/json")
     public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequestDTO) throws CustomException, IOException {
-        var user = userService.findByUsername(loginRequestDTO.getUsername());
+        var user = userService.findByUsername(loginRequestDTO.getEmail());
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                loginRequestDTO.getUsername(),
+                loginRequestDTO.getEmail(),
                 loginRequestDTO.getPassword())
         );
 
@@ -57,9 +59,9 @@ public class UserController {
     }
 
     @PostMapping(value = "/register", produces = "application/json")
-    public ApiResponse<UserDTO> register(@Valid @RequestBody SignUpDTO signUpDTO) throws CustomException {
-        var User = userService.createUser(signUpDTO);
-        return ApiResponse.successWithResult(modelMapper.map(User, UserDTO.class));
+    public ApiResponse<SignUpResponse> register(@Valid @RequestBody SignUpDTO signUpDTO) throws CustomException {
+        var signUpResponse  = userService.createUser(signUpDTO);
+        return ApiResponse.successWithResult(signUpResponse, ResponseCode.OK.getMessage());
     }
 
     @PutMapping(value = "{UserId}", produces = "application/json")

@@ -1,6 +1,6 @@
 package com.example.antifacebookservice.exception;
 
-import com.example.antifacebookservice.constant.ErrorCode;
+import com.example.antifacebookservice.constant.ResponseCode;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -8,11 +8,11 @@ import lombok.EqualsAndHashCode;
 @Data
 public class CustomException extends Exception {
     private String message;
-    private String errorCode;
+    private Integer errorCode;
 
-    public CustomException(ErrorCode errorCode, String... args) {
-        super(String.format(errorCode.getMessage(), args));
-        this.message = errorCode.getMessage();
-        this.errorCode = errorCode.getCode();
+    public CustomException(ResponseCode responseCode, String... args) {
+        super(String.format(responseCode.getMessage(), args));
+        this.message = responseCode.getMessage();
+        this.errorCode = responseCode.getCode();
     }
 }

@@ -1,11 +1,10 @@
 package com.example.antifacebookservice.service.impl;
 
-import com.example.antifacebookservice.constant.ErrorCode;
-import com.example.antifacebookservice.constant.Role;
+import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
 import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
 import com.example.antifacebookservice.controller.request.auth.UpdateUserDTO;
-import com.example.antifacebookservice.controller.request.auth.UserDTO;
+import com.example.antifacebookservice.controller.response.SignUpResponse;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.repository.UserRepository;
@@ -14,7 +13,6 @@ import com.example.antifacebookservice.util.AuthUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -23,7 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -57,20 +54,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public User findByUsername(String username) throws CustomException, IOException {
         Optional<User> optionalUser = userRepository.findByUsername(username);
         if (optionalUser.isEmpty()) {
-            throw new CustomException(ErrorCode.USER_NOT_EXIST);
+            throw new CustomException(ResponseCode.USER_IS_NOT_VALIDATED);
         }
-//        File file = new File(FileConfig.PRE_PATH_AVATAR + optionalUser.get().getId() + ".jpg");
-//
-//        if (file.exists()) {
-//            optionalUser.get().setAvatar(Arrays.toString(FileUtils.convertFileToBytes(file)));
-//        }
+
         return optionalUser.get();
     }
 
     @Override
-    public User createUser(SignUpDTO signUpDTO) throws CustomException {
+    public SignUpResponse createUser(SignUpDTO signUpDTO) throws CustomException {
         if (userRepository.existsByEmail(signUpDTO.getEmail())) {
-            throw new CustomException(ErrorCode.EMAIL_EXIST);
+            throw new CustomException(ResponseCode.USER_EXISTED);
         }
 
         User user = new User();
@@ -85,31 +78,29 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 //        User.setLastName(signUpDTO.getLastName());
 //        User.setCountry(signUpDTO.getCountry());
         user.setPasswordHash(passwordEncoder.encode(signUpDTO.getPassword()));
+        userRepository.save(user);
 
-//        notificationRepository.save(new Notification(null,
-//                null,
-//                null,
-//                User.getId(),
-//                "feb0978d-b7b6-4bb9-9a85-96f9cc0ed5de",
-//                ""));
+        SignUpResponse signUpResponse = new SignUpResponse();
+        Random random = new Random();
+        signUpResponse.setCodeVerify(random.nextInt(900000) + 100000);
 
-        return userRepository.save(user);
+        return signUpResponse;
     }
 
     @Override
     public void checkPermission(String userId) throws CustomException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = findById(authentication.getName());
-        if (!userId.equals(currentUser.getId()) && !authUtils.isAdmin()) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
+//        if (!userId.equals(currentUser.getId()) && !authUtils.isAdmin()) {
+//            throw new CustomException(ErrorCode.UNAUTHORIZED);
+//        }
     }
 
     @Override
     public User findById(String UserId) throws CustomException {
         var user = this.userRepository.findById(UserId);
         if (user.isEmpty()) {
-            throw new CustomException(ErrorCode.USER_NOT_EXIST);
+            throw new CustomException(ResponseCode.USER_EXISTED);
         }
 
         return user.get();
@@ -119,9 +110,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public User preCheckUpdateUserInfo(UpdateUserDTO updateUserDTO, String currentUserId, String UserId, MultipartFile avatarFile) throws CustomException, IOException {
         var existedUser = this.findById(currentUserId);
 
-        if (!Objects.equals(UserId, existedUser.getId())) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
+//        if (!Objects.equals(UserId, existedUser.getId())) {
+//            throw new CustomException(ErrorCode.UNAUTHORIZED);
+//        }
 
         return this.updateUser(updateUserDTO, existedUser, avatarFile);
     }
@@ -130,9 +121,9 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public User resetPassword(ResetPasswordDTO resetPasswordDTO, String currentUserId, String userId) throws CustomException {
         var existedUser = this.findById(currentUserId);
 
-        if (!Objects.equals(userId, existedUser.getId())) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
+//        if (!Objects.equals(userId, existedUser.getId())) {
+//            throw new CustomException(ErrorCode.UNAUTHORIZED);
+//        }
 
         existedUser.setPasswordHash(passwordEncoder.encode(resetPasswordDTO.getPassword()));
 

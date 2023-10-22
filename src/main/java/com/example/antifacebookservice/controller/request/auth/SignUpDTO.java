@@ -13,7 +13,7 @@ import javax.validation.constraints.*;
 public class SignUpDTO {
 
     @NotBlank(message = "UUID thiết bị không được bỏ trống")
-    private String deviceUUID;
+    private String uuid;
 
     @NotBlank(message = "Mail không được để trống !")
     @Email(message = "Sai định dạng email !")
