@@ -4,9 +4,11 @@ import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
 import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
 import com.example.antifacebookservice.controller.request.auth.UpdateUserDTO;
-import com.example.antifacebookservice.controller.response.SignUpResponse;
+import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
+import com.example.antifacebookservice.entity.CodeVerify;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
+import com.example.antifacebookservice.repository.CodeVerifyRepository;
 import com.example.antifacebookservice.repository.UserRepository;
 import com.example.antifacebookservice.service.UserService;
 import com.example.antifacebookservice.util.AuthUtils;
@@ -22,17 +24,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalTime;
 import java.util.*;
 
 @Service
 public class UserServiceImpl implements UserService, UserDetailsService {
     private final UserRepository userRepository;
+    private final CodeVerifyRepository codeVerifyRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthUtils authUtils) {
+    public UserServiceImpl(UserRepository userRepository, CodeVerifyRepository codeVerifyRepository, PasswordEncoder passwordEncoder, AuthUtils authUtils) {
         this.userRepository = userRepository;
+        this.codeVerifyRepository = codeVerifyRepository;
         this.passwordEncoder = passwordEncoder;
         this.authUtils = authUtils;
     }
@@ -51,7 +56,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public User findByUsername(String username) throws CustomException, IOException {
+    public User findByUsername(String username) throws CustomException {
         Optional<User> optionalUser = userRepository.findByUsername(username);
         if (optionalUser.isEmpty()) {
             throw new CustomException(ResponseCode.USER_IS_NOT_VALIDATED);
@@ -61,30 +66,44 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public SignUpResponse createUser(SignUpDTO signUpDTO) throws CustomException {
+    public void createUser(SignUpDTO signUpDTO) throws CustomException, IOException, InterruptedException {
         if (userRepository.existsByEmail(signUpDTO.getEmail())) {
             throw new CustomException(ResponseCode.USER_EXISTED);
         }
 
         User user = new User();
         user.setId(UUID.randomUUID().toString());
-//        User.setGender(UserDTO.getGender());
-//        User.setBirthOfDate(UserDTO.getBirthOfDate());
-//        User.setMobile(UserDTO.getMobile());
-//        User.setRole(Role.USER.getValue());
         user.setUsername(signUpDTO.getEmail());
         user.setEmail(signUpDTO.getEmail());
-//        User.setFirstName(signUpDTO.getFirstName());
-//        User.setLastName(signUpDTO.getLastName());
-//        User.setCountry(signUpDTO.getCountry());
+        user.setIsVerified(false);
         user.setPasswordHash(passwordEncoder.encode(signUpDTO.getPassword()));
         userRepository.save(user);
 
-        SignUpResponse signUpResponse = new SignUpResponse();
-        Random random = new Random();
-        signUpResponse.setCodeVerify(random.nextInt(900000) + 100000);
+        getCodeVerify(signUpDTO.getEmail());
+    }
 
-        return signUpResponse;
+    @Override
+    public GetCodeVerifyResponse getCodeVerify(String email) throws CustomException {
+        var codeVerifyExisted = codeVerifyRepository.findCodeVerifiesByUsername(email);
+        codeVerifyExisted.ifPresent(codeVerifyRepository::delete);
+        findByUsername(email);
+
+        int randomNumber = generateRandomNumber();
+
+        LocalTime currentTime = LocalTime.now();
+
+        CodeVerify codeVerify = new CodeVerify();
+        codeVerify.setCodeVerify(randomNumber);
+        codeVerify.setUsername(email);
+        codeVerify.setCurrentTime(currentTime);
+
+        codeVerifyRepository.save(codeVerify);
+
+        GetCodeVerifyResponse getCodeVerifyResponse = new GetCodeVerifyResponse();
+        getCodeVerifyResponse.setCodeVerify(randomNumber);
+
+        return getCodeVerifyResponse;
+
     }
 
     @Override
@@ -154,5 +173,17 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         this.userRepository.save(existedUser);
 
         return existedUser;
+    }
+
+    private int generateRandomNumber() {
+        Random random = new Random();
+        return random.nextInt(900000) + 100000;
+    }
+
+    private boolean randomNumberExpired(int randomNumber) {
+        int currentTimestamp = (int) (System.currentTimeMillis() / 1000);
+        int timestampCreated = randomNumber / 1000;
+
+        return currentTimestamp - timestampCreated >= 5;
     }
 }

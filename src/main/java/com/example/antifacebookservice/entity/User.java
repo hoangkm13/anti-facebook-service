@@ -37,14 +37,8 @@ public class User {
 //    private String mobile;
 //
     private String passwordHash;
-//
-//    private String role;
-//
-//    private String website;
-//
-//    private String github;
-//
-//    private String facebook;
+
+    private Boolean isVerified;
 
     private String email;
 

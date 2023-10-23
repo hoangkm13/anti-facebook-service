@@ -2,7 +2,7 @@ package com.example.antifacebookservice.controller;
 
 import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.controller.request.auth.*;
-import com.example.antifacebookservice.controller.response.SignUpResponse;
+import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.model.ApiResponse;
@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import javax.validation.Valid;
 import java.io.IOException;
 
@@ -41,6 +42,9 @@ public class UserController {
     @PostMapping(value = "/login", produces = "application/json")
     public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequestDTO) throws CustomException, IOException {
         var user = userService.findByUsername(loginRequestDTO.getEmail());
+        if (!user.getIsVerified()) {
+            throw new CustomException(ResponseCode.CODE_VERIFY_IS_INCORRECT);
+        }
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 loginRequestDTO.getEmail(),
                 loginRequestDTO.getPassword())
@@ -48,7 +52,15 @@ public class UserController {
 
         String token = tokenUtils.generateToken(authentication);
         LoginResponseDTO userToken = new LoginResponseDTO(token, user);
+
         return ApiResponse.successWithResult(userToken);
+    }
+
+    @PostMapping(value = "/getCodeVerify", produces = "application/json")
+    public ApiResponse<GetCodeVerifyResponse> getCodeVerify(@Valid @RequestBody GetCodeVerifyRequest getCodeVerify) throws CustomException, IOException, InterruptedException {
+        var getCodeVerifyResponse = userService.getCodeVerify(getCodeVerify.getEmail());
+
+        return ApiResponse.successWithResult(getCodeVerifyResponse);
     }
 
     @GetMapping(produces = "application/json")
@@ -59,9 +71,9 @@ public class UserController {
     }
 
     @PostMapping(value = "/register", produces = "application/json")
-    public ApiResponse<SignUpResponse> register(@Valid @RequestBody SignUpDTO signUpDTO) throws CustomException {
-        var signUpResponse  = userService.createUser(signUpDTO);
-        return ApiResponse.successWithResult(signUpResponse, ResponseCode.OK.getMessage());
+    public ApiResponse<Object> register(@Valid @RequestBody SignUpDTO signUpDTO) throws CustomException, IOException, InterruptedException {
+        userService.createUser(signUpDTO);
+        return ApiResponse.successWithResult(null, ResponseCode.OK.getMessage());
     }
 
     @PutMapping(value = "{UserId}", produces = "application/json")

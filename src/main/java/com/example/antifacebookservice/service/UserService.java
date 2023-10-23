@@ -3,7 +3,7 @@ package com.example.antifacebookservice.service;
 import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
 import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
 import com.example.antifacebookservice.controller.request.auth.UpdateUserDTO;
-import com.example.antifacebookservice.controller.response.SignUpResponse;
+import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,7 +13,9 @@ import java.io.IOException;
 public interface UserService {
     User findByUsername(String username) throws CustomException, IOException;
 
-    SignUpResponse createUser(SignUpDTO signUpDTO) throws CustomException;
+    void createUser(SignUpDTO signUpDTO) throws CustomException, IOException, InterruptedException;
+
+    GetCodeVerifyResponse getCodeVerify(String email) throws CustomException, IOException, InterruptedException;
 
     void checkPermission(String userId) throws CustomException;
 
