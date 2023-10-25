@@ -22,8 +22,6 @@ public class CodeVerify {
 
     private Integer codeVerify;
 
-    private LocalTime currentTime;
-
-    private LocalTime expiredTime;
+    private LocalTime createdTime;
 
 }

@@ -1,8 +1,10 @@
 package com.example.antifacebookservice.service;
 
+import com.example.antifacebookservice.controller.request.auth.CheckCodeVerifyRequest;
 import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
 import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
 import com.example.antifacebookservice.controller.request.auth.UpdateUserDTO;
+import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
@@ -16,6 +18,8 @@ public interface UserService {
     void createUser(SignUpDTO signUpDTO) throws CustomException, IOException, InterruptedException;
 
     GetCodeVerifyResponse getCodeVerify(String email) throws CustomException, IOException, InterruptedException;
+
+    CheckVerifyCodeResponse checkVerifyCode(CheckCodeVerifyRequest checkCodeVerifyRequest) throws CustomException, IOException, InterruptedException;
 
     void checkPermission(String userId) throws CustomException;
 

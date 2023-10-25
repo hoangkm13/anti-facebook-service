@@ -2,6 +2,7 @@ package com.example.antifacebookservice.controller;
 
 import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.controller.request.auth.*;
+import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
@@ -42,7 +43,7 @@ public class UserController {
     @PostMapping(value = "/login", produces = "application/json")
     public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequestDTO) throws CustomException, IOException {
         var user = userService.findByUsername(loginRequestDTO.getEmail());
-        if (!user.getIsVerified()) {
+        if (!user.getActive()) {
             throw new CustomException(ResponseCode.CODE_VERIFY_IS_INCORRECT);
         }
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
@@ -61,6 +62,13 @@ public class UserController {
         var getCodeVerifyResponse = userService.getCodeVerify(getCodeVerify.getEmail());
 
         return ApiResponse.successWithResult(getCodeVerifyResponse);
+    }
+
+    @PostMapping(value = "/checkVerifyCode", produces = "application/json")
+    public ApiResponse<CheckVerifyCodeResponse> checkVerifyCode(@Valid @RequestBody CheckCodeVerifyRequest checkCodeVerifyRequest) throws CustomException, IOException, InterruptedException {
+        var checkVerifyCodeResponse = userService.checkVerifyCode(checkCodeVerifyRequest);
+
+        return ApiResponse.successWithResult(checkVerifyCodeResponse);
     }
 
     @GetMapping(produces = "application/json")

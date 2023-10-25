@@ -1,9 +1,11 @@
 package com.example.antifacebookservice.service.impl;
 
 import com.example.antifacebookservice.constant.ResponseCode;
+import com.example.antifacebookservice.controller.request.auth.CheckCodeVerifyRequest;
 import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
 import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
 import com.example.antifacebookservice.controller.request.auth.UpdateUserDTO;
+import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.CodeVerify;
 import com.example.antifacebookservice.entity.User;
@@ -75,7 +77,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setId(UUID.randomUUID().toString());
         user.setUsername(signUpDTO.getEmail());
         user.setEmail(signUpDTO.getEmail());
-        user.setIsVerified(false);
+        user.setActive(false);
         user.setPasswordHash(passwordEncoder.encode(signUpDTO.getPassword()));
         userRepository.save(user);
 
@@ -95,7 +97,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         CodeVerify codeVerify = new CodeVerify();
         codeVerify.setCodeVerify(randomNumber);
         codeVerify.setUsername(email);
-        codeVerify.setCurrentTime(currentTime);
+        codeVerify.setCreatedTime(currentTime);
 
         codeVerifyRepository.save(codeVerify);
 
@@ -104,6 +106,37 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         return getCodeVerifyResponse;
 
+    }
+
+    @Override
+    public CheckVerifyCodeResponse checkVerifyCode(CheckCodeVerifyRequest checkCodeVerifyRequest) throws CustomException, IOException, InterruptedException {
+        var code = this.codeVerifyRepository.findCodeVerifiesByUsername(checkCodeVerifyRequest.getEmail());
+        var user = findByUsername(checkCodeVerifyRequest.getEmail());
+
+        if (code.isEmpty()) {
+            throw new CustomException(ResponseCode.CODE_VERIFY_IS_INCORRECT);
+        }
+
+        if (!code.get().getCodeVerify().equals(checkCodeVerifyRequest.getCodeVerify())) {
+            throw new CustomException(ResponseCode.PARAMETER_VALUE_IS_INVALID);
+        }
+
+        LocalTime currentTime = LocalTime.now();
+
+        if (code.get().getCreatedTime().plusSeconds(60).isAfter(currentTime)) {
+
+            user.setActive(true);
+            this.userRepository.save(user);
+            this.codeVerifyRepository.delete(code.get());
+
+            CheckVerifyCodeResponse checkVerifyCodeResponse = new CheckVerifyCodeResponse();
+            checkVerifyCodeResponse.setActive(true);
+            checkVerifyCodeResponse.setId(user.getId());
+
+            return checkVerifyCodeResponse;
+        } else {
+            throw new CustomException(ResponseCode.CODE_VERIFY_IS_INCORRECT);
+        }
     }
 
     @Override
