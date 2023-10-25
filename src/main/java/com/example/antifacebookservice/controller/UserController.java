@@ -84,17 +84,17 @@ public class UserController {
         return ApiResponse.successWithResult(null, ResponseCode.OK.getMessage());
     }
 
-    @PutMapping(value = "{UserId}", produces = "application/json")
-    public ApiResponse<UserDTO> updateUser(@PathVariable String UserId, @Valid @RequestPart UpdateUserDTO UserDTO, @RequestPart(required = false) MultipartFile avatarFile) throws CustomException, IOException {
+    @PutMapping(value = "/changeInfoAfterSignUp/{userId}", produces = "application/json")
+    public ApiResponse<UserDTO> changeInfoAfterSignUp(@PathVariable String userId, @Valid @RequestPart(required = false) String username, @RequestPart(required = false) MultipartFile avatarFile) throws CustomException, IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var User = userService.preCheckUpdateUserInfo(UserDTO, authentication.getPrincipal().toString(), UserId, avatarFile);
+        var User = userService.changeInfoAfterSignUp(username, authentication.getPrincipal().toString(), userId, avatarFile);
         return ApiResponse.successWithResult(modelMapper.map(User, UserDTO.class));
     }
 
-    @PostMapping(value = "changePassword/{UserId}", produces = "application/json")
-    public ApiResponse<UserDTO> resetPassword(@PathVariable String UserId, @Valid @RequestBody ResetPasswordDTO resetPasswordDTO) throws CustomException {
+    @PostMapping(value = "changePassword/{userId}", produces = "application/json")
+    public ApiResponse<UserDTO> resetPassword(@PathVariable String userId, @Valid @RequestBody ResetPasswordDTO resetPasswordDTO) throws CustomException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var User = userService.resetPassword(resetPasswordDTO, String.valueOf(authentication.getPrincipal().toString()), UserId);
+        var User = userService.resetPassword(resetPasswordDTO, String.valueOf(authentication.getPrincipal().toString()), userId);
         return ApiResponse.successWithResult(modelMapper.map(User, UserDTO.class));
     }
 }

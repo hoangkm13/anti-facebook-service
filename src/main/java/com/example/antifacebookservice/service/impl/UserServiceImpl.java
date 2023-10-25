@@ -159,14 +159,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public User preCheckUpdateUserInfo(UpdateUserDTO updateUserDTO, String currentUserId, String UserId, MultipartFile avatarFile) throws CustomException, IOException {
+    public User changeInfoAfterSignUp(String username, String currentUserId, String UserId, MultipartFile avatarFile) throws CustomException, IOException {
         var existedUser = this.findById(currentUserId);
 
-//        if (!Objects.equals(UserId, existedUser.getId())) {
-//            throw new CustomException(ErrorCode.UNAUTHORIZED);
-//        }
+        if (!Objects.equals(UserId, existedUser.getId())) {
+            throw new CustomException(ResponseCode.PARAMETER_VALUE_IS_INVALID);
+        }
 
-        return this.updateUser(updateUserDTO, existedUser, avatarFile);
+        return this.updateUser(username, existedUser, avatarFile);
     }
 
     @Override
@@ -182,17 +182,17 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         return this.userRepository.save(existedUser);
     }
 
-    private User updateUser(UpdateUserDTO updateUserDTO, User existedUser, MultipartFile avatarFile) throws IOException {
+    private User updateUser(String username, User existedUser, MultipartFile avatarFile) throws IOException {
 
 //        FileUtils fileUtils = new FileUtils();
 
 //        existedUser.setGender(updateUserDTO.getGender() != null ? updateUserDTO.getGender() : existedUser.getGender());
 //        existedUser.setBirthOfDate(updateUserDTO.getBirthOfDate() != null ? updateUserDTO.getBirthOfDate() : existedUser.getBirthOfDate());
 //        existedUser.setMobile(updateUserDTO.getMobile() != null ? updateUserDTO.getMobile() : existedUser.getMobile());
-        existedUser.setEmail(updateUserDTO.getEmail() != null ? updateUserDTO.getEmail() : existedUser.getEmail());
+        existedUser.setEmail(username != null ? username : existedUser.getEmail());
+        existedUser.setUsername(username != null ? username : existedUser.getEmail());
 //        existedUser.setFirstName(updateUserDTO.getFirstName() != null ? updateUserDTO.getFirstName() : existedUser.getFirstName());
 //        existedUser.setLastName(updateUserDTO.getLastName() != null ? updateUserDTO.getLastName() : existedUser.getLastName());
-        existedUser.setEmail(updateUserDTO.getEmail() != null ? updateUserDTO.getEmail() : existedUser.getEmail());
 //        existedUser.setGithub(updateUserDTO.getGithub() != null ? updateUserDTO.getGithub() : existedUser.getGithub());
 //        existedUser.setFacebook(updateUserDTO.getFacebook() != null ? updateUserDTO.getFacebook() : existedUser.getFacebook());
 //        existedUser.setWebsite(updateUserDTO.getWebsite() != null ? updateUserDTO.getWebsite() : existedUser.getWebsite());

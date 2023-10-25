@@ -3,7 +3,6 @@ package com.example.antifacebookservice.service;
 import com.example.antifacebookservice.controller.request.auth.CheckCodeVerifyRequest;
 import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
 import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
-import com.example.antifacebookservice.controller.request.auth.UpdateUserDTO;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.User;
@@ -25,7 +24,7 @@ public interface UserService {
 
     User findById(String UserId) throws CustomException;
 
-    User preCheckUpdateUserInfo(UpdateUserDTO updateUserDTO, String currentUserId, String userId, MultipartFile avatarFile) throws CustomException, IOException;
+    User changeInfoAfterSignUp(String username, String currentUserId, String userId, MultipartFile avatarFile) throws CustomException, IOException;
 
     User resetPassword(ResetPasswordDTO resetPasswordDTO, String currentUserId, String userId) throws CustomException;
 }
