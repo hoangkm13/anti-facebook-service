@@ -68,7 +68,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public void createUser(SignUpDTO signUpDTO) throws CustomException, IOException, InterruptedException {
+    public void createUser(SignUpDTO signUpDTO) throws CustomException {
         if (userRepository.existsByEmail(signUpDTO.getEmail())) {
             throw new CustomException(ResponseCode.USER_EXISTED);
         }

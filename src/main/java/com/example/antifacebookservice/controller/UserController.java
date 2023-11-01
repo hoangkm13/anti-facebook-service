@@ -39,7 +39,6 @@ public class UserController {
         this.modelMapper = modelMapper;
     }
 
-
     @PostMapping(value = "/login", produces = "application/json")
     public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequestDTO) throws CustomException, IOException {
         var user = userService.findByUsername(loginRequestDTO.getEmail());
