@@ -7,6 +7,8 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import javax.validation.constraints.NotBlank;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -36,11 +38,14 @@ public class User {
 //
     private String passwordHash;
 
-    private Boolean active;
+    private Boolean isVerified;
 
     private String email;
 
-    private String coins;
+    private int coins;
+
+    private Boolean active;
+
 //    private String country;
 
 }
