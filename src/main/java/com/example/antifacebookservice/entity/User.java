@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import javax.validation.constraints.NotBlank;
+import java.util.List;
 
 @Getter
 @Setter
@@ -45,6 +46,8 @@ public class User {
     private int coins;
 
     private Boolean active;
+
+    private List<String> postLists;
 
 //    private String country;
 

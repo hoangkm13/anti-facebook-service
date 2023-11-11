@@ -13,6 +13,8 @@ public class Post {
 
     private String userId;
 
+    private String name;
+
     private String token;
 
     private String described;
@@ -22,4 +24,10 @@ public class Post {
     private List<String> commentIds;
 
     private List<String> userLikeIds;
+
+    private String videoId;
+
+    private String categoryId;
+
+    private boolean isRestriction;
 }

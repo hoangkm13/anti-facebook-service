@@ -1,10 +1,16 @@
 package com.example.antifacebookservice.controller.request.auth.out.post;
 
+import com.example.antifacebookservice.entity.Category;
+import com.example.antifacebookservice.entity.Image;
+import com.example.antifacebookservice.entity.User;
+import com.example.antifacebookservice.entity.Video;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
+@Builder
 public class PostDetailOut {
 
     private String id;
@@ -14,6 +20,8 @@ public class PostDetailOut {
     private String createdAt;
 
     private String described;
+
+    private User author;
 
     private String modifiedAt;
 
@@ -29,5 +37,17 @@ public class PostDetailOut {
 
     private String isMarked;
 
-    private List<String> imageIds;
+    private String isBlocked;
+
+    private String canEdit;
+
+    private String canRate;
+
+    private String url;
+
+    private List<Image> images;
+
+    private Video video;
+
+    private Category category;
 }
