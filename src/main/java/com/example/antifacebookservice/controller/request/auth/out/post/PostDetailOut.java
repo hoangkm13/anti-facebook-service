@@ -21,7 +21,7 @@ public class PostDetailOut {
 
     private String described;
 
-    private User author;
+    private AuthorOut author;
 
     private String modifiedAt;
 
@@ -50,4 +50,15 @@ public class PostDetailOut {
     private Video video;
 
     private Category category;
+
+    @Data
+    public static class AuthorOut {
+        private String id;
+        private String name;
+        private String avatar;
+        private int coins;
+    }
+
 }
+
+

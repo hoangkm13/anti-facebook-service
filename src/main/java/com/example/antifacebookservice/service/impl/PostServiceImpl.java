@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -42,40 +43,66 @@ public class PostServiceImpl implements PostService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userService.findById(authentication.getName());
 
-        try {
-            Post post = new Post();
-            String postId = UUID.randomUUID().toString();
-            post.setId(postId);
-            post.setUserId(authentication.getName());
-            post.setDescribed(createPostIn.getDescribed());
-            post.setStatus(createPostIn.getStatus());
-//            post.setImageIds(createPostIn.getImages());
-            post.setVideoId(video.getBytes().toString());
-            postRepository.save(post);
-            return new PostResponseCUD(postId, "http://anti.facebook.com/post?id=" + postId, user.getCoins() - 1);
-        } catch (IOException e) {
-            throw new CustomException(ResponseCode.SERVER_ERROR);
+        if (user.getCoins() <= 0) {
+            throw new CustomException(ResponseCode.NOT_ENOUGH_COINS);
         }
+
+        String newPostId = UUID.randomUUID().toString();
+
+        Video newVideo = new Video();
+        newVideo.setId(UUID.randomUUID().toString());
+        newVideo.setUrl(createPostIn.getVideoUrl());
+        newVideo.setThumb("Upload video");
+        newVideo.setPostId(newPostId);
+
+        if (!video.isEmpty()) {
+            //Luu vao cloud
+            String vId = UUID.randomUUID().toString();
+            String url = "http://anti-facebook-cloud/%s-%s.com".formatted(vId, LocalDate.now());
+            newVideo.setUrl(url);
+            //
+        }
+        videoRepository.save(newVideo);
+
+        postRepository.save(Post.builder()
+                .id(newPostId)
+                .userId(user.getId())
+                .described(createPostIn.getDescribed())
+                .status(createPostIn.getStatus())
+                .videoId(newVideo.getId())
+                .build());
+
+        int coinsLeft = user.getCoins() - 1;
+        user.setCoins(coinsLeft);
+        userRepository.save(user);
+
+        return new PostResponseCUD(newPostId, "http://anti.facebook.com/post?id=" + newPostId, coinsLeft);
     }
 
     @Override
     public PostDetailOut getPostDetail(String token, String id) throws CustomException, IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findByUsername(authentication.getName());
+        User user = userService.findById(authentication.getName());
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
         Video video = videoRepository.findById(post.getVideoId())
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Video not found!"));
-        Category category = categoryRepository.findById(post.getVideoId())
-                .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Category not found!"));
+        Category category = categoryRepository.findById(post.getCategoryId())
+                .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Video not found!"));
+
+        PostDetailOut.AuthorOut author = new PostDetailOut.AuthorOut();
+        author.setId(user.getId());
+        author.setName(user.getUsername());
+        author.setAvatar(user.getAvatar());
+        author.setCoins(user.getCoins());
 
         return PostDetailOut.builder()
                 .id(post.getId())
                 .name(post.getName())
                 .described(post.getDescribed())
                 .category(category)
-                .author(user)
+                .author(author)
                 .fake("").trust("").kudos("").disappointed("")
                 .createdAt("").modifiedAt("")
                 .isRated("").isMarked("").isBlocked("").canEdit("")
@@ -86,7 +113,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostResponseCUD editPost(UpdatePostIn updatePostIn) {
+    public PostResponseCUD editPost(String token, String id, UpdatePostIn updatePostIn) {
         return null;
     }
 
@@ -95,11 +122,19 @@ public class PostServiceImpl implements PostService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = userService.findById(authentication.getName());
 
+        if (user.getCoins() <= 0) {
+            throw new CustomException(ResponseCode.NOT_ENOUGH_COINS);
+        }
+
         Optional<Post> post = postRepository.findById(id);
 
         if (post.isEmpty()) {
             throw new CustomException(ResponseCode.NOT_FOUND, "Post not found!");
         }
+
+        user.setCoins(user.getCoins() - 1);
+        userRepository.save(user);
+        postRepository.delete(post.get());
 
         return new PostResponseCUD(null, null, user.getCoins() - 1);
     }

@@ -14,4 +14,6 @@ public class CreatePostIn {
     private String described;
 
     private String status;
+
+    private String videoUrl;
 }
