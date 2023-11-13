@@ -30,7 +30,7 @@ public class PostController {
     }
 
     @PostMapping("/edit-post")
-    public ApiResponse<?> editPost(String token, String id, @RequestBody UpdatePostIn updatePostIn) {
+    public ApiResponse<?> editPost(String token, String id, @RequestBody UpdatePostIn updatePostIn) throws CustomException {
         return ApiResponse.successWithResult(postService.editPost(token, id, updatePostIn));
     }
 

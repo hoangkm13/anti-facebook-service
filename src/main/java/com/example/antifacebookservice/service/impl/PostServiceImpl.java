@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,7 +39,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostResponseCUD createPost(CreatePostIn createPostIn, MultipartFile video) throws CustomException {
-        User user = userService.findById(DataContextHelper.getUserId());
+        User user = userService.findByUsername(DataContextHelper.getUserName());
 
         if (user.getCoins() <= 0) {
             throw new CustomException(ResponseCode.NOT_ENOUGH_COINS);
@@ -67,6 +68,7 @@ public class PostServiceImpl implements PostService {
                 .described(createPostIn.getDescribed())
                 .status(createPostIn.getStatus())
                 .videoId(newVideo.getId())
+                .autoAccept(true)
                 .build());
 
         int coinsLeft = user.getCoins() - 1;
@@ -78,19 +80,19 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostDetailOut getPostDetail(String token, String id) throws CustomException {
-        User user = userService.findById(DataContextHelper.getUserId());
+        User user = userService.findByUsername(DataContextHelper.getUserName());
         Category category = null;
         Video video = null;
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
 
-        if(post.getVideoId() != null){
-             video = videoRepository.findById(post.getVideoId())
+        if (post.getVideoId() != null) {
+            video = videoRepository.findById(post.getVideoId())
                     .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Video not found!"));
         }
 
-        if(post.getCategoryId() != null){
+        if (post.getCategoryId() != null) {
             category = categoryRepository.findById(post.getCategoryId())
                     .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Category not found!"));
         }
@@ -117,13 +119,47 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostResponseCUD editPost(String token, String id, UpdatePostIn updatePostIn) {
-        return null;
+    public PostResponseCUD editPost(String token, String id, UpdatePostIn updatePostIn) throws CustomException {
+        User user = userService.findByUsername(DataContextHelper.getUserName());
+
+        if (user.getCoins() <= 0) {
+            throw new CustomException(ResponseCode.NOT_ENOUGH_COINS);
+        }
+
+        Post updatePost = postRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
+
+        updatePost.setDescribed(updatePostIn.getDescribed());
+        updatePost.setStatus(updatePostIn.getStatus());
+        updatePost.setImageIds(updatePostIn.getImages());
+        updatePost.setAutoAccept(updatePost.isAutoAccept());
+
+        if (updatePostIn.getImagesDel() != null) {
+                updatePostIn.getImagesDel().forEach(imageId -> {
+                    try {
+                        Image image = imageRepository.findById(imageId).orElseThrow(() ->
+                                new CustomException(ResponseCode.NOT_FOUND));
+
+                        updatePost.getImageIds().remove(imageId);
+                        imageRepository.delete(image);
+                    } catch (CustomException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+        }
+
+        int coinLeft = user.getCoins() - 1;
+        user.setCoins(coinLeft);
+
+        userRepository.save(user);
+        postRepository.save(updatePost);
+
+        return new PostResponseCUD(null, null, coinLeft);
     }
 
     @Override
     public PostResponseCUD deletePost(String token, String id) throws CustomException {
-        User user = userService.findById(DataContextHelper.getUserId());
+        User user = userService.findByUsername(DataContextHelper.getUserName());
 
         if (user.getCoins() <= 0) {
             throw new CustomException(ResponseCode.NOT_ENOUGH_COINS);
@@ -144,7 +180,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public void reportPost(String token, String id, String subject, String details) throws CustomException {
-        User user = userService.findById(DataContextHelper.getUserId());
+        User user = userService.findByUsername(DataContextHelper.getUserName());
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));

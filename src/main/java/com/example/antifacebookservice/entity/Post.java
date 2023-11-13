@@ -27,9 +27,13 @@ public class Post {
 
     private List<String> userLikeIds;
 
+    private List<String> imageIds;
+
     private String videoId;
 
     private String categoryId;
 
     private boolean isRestriction;
+
+    private boolean autoAccept = true;
 }

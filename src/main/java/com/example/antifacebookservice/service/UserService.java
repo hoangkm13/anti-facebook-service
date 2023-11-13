@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 public interface UserService {
-    User findByUsername(String username) throws CustomException, IOException;
+    User findByUsername(String username) throws CustomException;
 
     void createUser(SignUpDTO signUpDTO) throws CustomException, IOException, InterruptedException;
 

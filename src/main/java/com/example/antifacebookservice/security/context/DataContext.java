@@ -8,4 +8,5 @@ import lombok.Data;
 public class DataContext {
     private String accessToken;
     private String userId;
+    private String userName;
 }
