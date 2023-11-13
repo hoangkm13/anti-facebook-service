@@ -55,7 +55,7 @@ public class PostServiceImpl implements PostService {
         if (!video.isEmpty()) {
             //Luu vao cloud
             String vId = UUID.randomUUID().toString();
-            String url = "http://anti-facebook-cloud/%s-%s.com".formatted(vId, LocalDate.now());
+            String url = String.format("http://anti-facebook-cloud/%s-%s.com", vId, LocalDate.now());
             newVideo.setUrl(url);
             //
         }
