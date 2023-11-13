@@ -13,9 +13,10 @@ import java.io.IOException;
 public interface PostService {
 
     PostResponseCUD createPost(CreatePostIn createPostIn, MultipartFile video) throws CustomException;
+
     PostDetailOut getPostDetail(String token, String id) throws CustomException, IOException;
 
-    PostResponseCUD editPost(String token, String id, UpdatePostIn updatePostIn);
+    PostResponseCUD editPost(String token, String id, UpdatePostIn updatePostIn) throws CustomException;
 
     PostResponseCUD deletePost(String token, String id) throws CustomException;
 

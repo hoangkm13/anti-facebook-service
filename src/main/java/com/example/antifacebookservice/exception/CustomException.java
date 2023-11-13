@@ -4,6 +4,9 @@ import com.example.antifacebookservice.constant.ResponseCode;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class CustomException extends Exception {
@@ -12,7 +15,10 @@ public class CustomException extends Exception {
 
     public CustomException(ResponseCode responseCode, String... args) {
         super(String.format(responseCode.getMessage(), args));
-        this.message = responseCode.getMessage();
+
+        if (args != null) this.message = String.join(", ", args);
+        else this.message = responseCode.getMessage();
+
         this.errorCode = responseCode.getCode();
     }
 }
