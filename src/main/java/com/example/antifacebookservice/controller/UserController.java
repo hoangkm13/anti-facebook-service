@@ -23,7 +23,7 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("v1/auth")
-@CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true")
+@CrossOrigin(origins = "http://localhost:8029", allowCredentials = "true")
 public class UserController {
     private final AuthenticationManager authenticationManager;
     private final TokenUtils tokenUtils;

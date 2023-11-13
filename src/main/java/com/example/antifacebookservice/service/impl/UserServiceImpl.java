@@ -4,7 +4,6 @@ import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.controller.request.auth.CheckCodeVerifyRequest;
 import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
 import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
-import com.example.antifacebookservice.controller.request.auth.UpdateUserDTO;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.CodeVerify;
@@ -70,7 +69,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public void createUser(SignUpDTO signUpDTO) throws CustomException {
         if (userRepository.existsByEmail(signUpDTO.getEmail())) {
-            throw new CustomException(ResponseCode.USER_EXISTED);
+            throw new CustomException(ResponseCode.EXISTED);
         }
 
         User user = new User();
@@ -152,7 +151,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public User findById(String UserId) throws CustomException {
         var user = this.userRepository.findById(UserId);
         if (user.isEmpty()) {
-            throw new CustomException(ResponseCode.USER_EXISTED);
+            throw new CustomException(ResponseCode.EXISTED);
         }
 
         return user.get();

@@ -10,10 +10,10 @@ public class CreatePostIn {
 
     private List<String> images;
 
-    private String videos;
-
     @NotBlank
     private String described;
 
     private String status;
+
+    private String videoUrl;
 }
