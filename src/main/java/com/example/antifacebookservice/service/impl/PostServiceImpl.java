@@ -10,15 +10,13 @@ import com.example.antifacebookservice.controller.request.auth.out.post.PostResp
 import com.example.antifacebookservice.entity.*;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.repository.*;
+import com.example.antifacebookservice.security.context.DataContextHelper;
 import com.example.antifacebookservice.service.PostService;
 import com.example.antifacebookservice.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,8 +38,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostResponseCUD createPost(CreatePostIn createPostIn, MultipartFile video) throws CustomException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findById(authentication.getName());
+        User user = userService.findById(DataContextHelper.getUserId());
 
         if (user.getCoins() <= 0) {
             throw new CustomException(ResponseCode.NOT_ENOUGH_COINS);
@@ -80,16 +77,15 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostDetailOut getPostDetail(String token, String id) throws CustomException, IOException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findById(authentication.getName());
+    public PostDetailOut getPostDetail(String token, String id) throws CustomException {
+        User user = userService.findById(DataContextHelper.getUserId());
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
         Video video = videoRepository.findById(post.getVideoId())
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Video not found!"));
-        Category category = categoryRepository.findById(post.getCategoryId())
-                .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Video not found!"));
+//        Category category = categoryRepository.findById(post.getCategoryId())
+//                .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Video not found!"));
 
         PostDetailOut.AuthorOut author = new PostDetailOut.AuthorOut();
         author.setId(user.getId());
@@ -101,7 +97,7 @@ public class PostServiceImpl implements PostService {
                 .id(post.getId())
                 .name(post.getName())
                 .described(post.getDescribed())
-                .category(category)
+                .category(null)
                 .author(author)
                 .fake("").trust("").kudos("").disappointed("")
                 .createdAt("").modifiedAt("")
@@ -119,8 +115,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostResponseCUD deletePost(String token, String id) throws CustomException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findById(authentication.getName());
+        User user = userService.findById(DataContextHelper.getUserId());
 
         if (user.getCoins() <= 0) {
             throw new CustomException(ResponseCode.NOT_ENOUGH_COINS);
@@ -141,8 +136,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public void reportPost(String token, String id, String subject, String details) throws CustomException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findById(authentication.getName());
+        User user = userService.findById(DataContextHelper.getUserId());
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
@@ -159,22 +153,19 @@ public class PostServiceImpl implements PostService {
                 .postId(post.getId())
                 .reportType(ReportType.valueOf(subject))
                 .describe(details)
-                .createdAt(null)
+                .createdAt(LocalDate.now().toString())
                 .build());
     }
 
     @Override
     public void reactPost(String token, String id, FeelType feelType) throws CustomException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = userService.findById(authentication.getName());
-
-        Optional<React> oldReaction = reactRepository.findByPostIdAndUserId(id, user.getId());
+        Optional<React> oldReaction = reactRepository.findByPostIdAndUserId(id, DataContextHelper.getUserId());
 
         oldReaction.ifPresent(reactRepository::delete);
 
         React newReact = new React();
         newReact.setPostId(id);
-        newReact.setUserId(user.getId());
+        newReact.setUserId(DataContextHelper.getUserId());
         newReact.setFeelType(feelType);
 
         reactRepository.save(newReact);
