@@ -79,13 +79,21 @@ public class PostServiceImpl implements PostService {
     @Override
     public PostDetailOut getPostDetail(String token, String id) throws CustomException {
         User user = userService.findById(DataContextHelper.getUserId());
+        Category category = null;
+        Video video = null;
 
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
-        Video video = videoRepository.findById(post.getVideoId())
-                .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Video not found!"));
-//        Category category = categoryRepository.findById(post.getCategoryId())
-//                .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Video not found!"));
+
+        if(post.getVideoId() != null){
+             video = videoRepository.findById(post.getVideoId())
+                    .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Video not found!"));
+        }
+
+        if(post.getCategoryId() != null){
+            category = categoryRepository.findById(post.getCategoryId())
+                    .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Category not found!"));
+        }
 
         PostDetailOut.AuthorOut author = new PostDetailOut.AuthorOut();
         author.setId(user.getId());
@@ -97,7 +105,7 @@ public class PostServiceImpl implements PostService {
                 .id(post.getId())
                 .name(post.getName())
                 .described(post.getDescribed())
-                .category(null)
+                .category(category)
                 .author(author)
                 .fake("").trust("").kudos("").disappointed("")
                 .createdAt("").modifiedAt("")
