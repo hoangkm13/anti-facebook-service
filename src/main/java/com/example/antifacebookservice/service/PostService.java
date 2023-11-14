@@ -5,6 +5,7 @@ import com.example.antifacebookservice.controller.request.auth.in.post.CreatePos
 import com.example.antifacebookservice.controller.request.auth.in.post.UpdatePostIn;
 import com.example.antifacebookservice.controller.request.auth.out.post.PostDetailOut;
 import com.example.antifacebookservice.controller.request.auth.out.post.PostResponseCUD;
+import com.example.antifacebookservice.controller.request.auth.out.post.ReactOut;
 import com.example.antifacebookservice.exception.CustomException;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,5 +23,7 @@ public interface PostService {
 
     void reportPost(String token, String id, String subject, String details) throws CustomException;
 
-    void reactPost(String token, String id, FeelType feelType) throws CustomException;
+    ReactOut reactPost(String token, String id, FeelType feelType) throws CustomException;
+
+    Integer checkNewItem(String lastId, String categoryId) throws CustomException;
 }

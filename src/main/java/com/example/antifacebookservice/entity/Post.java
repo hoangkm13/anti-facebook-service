@@ -35,5 +35,9 @@ public class Post {
 
     private boolean isRestriction;
 
-    private boolean autoAccept = true;
+    private boolean autoAccept;
+
+    private String createdAt;
+
+    private String modifiedAt;
 }
