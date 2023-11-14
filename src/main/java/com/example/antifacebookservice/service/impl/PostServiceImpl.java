@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -109,7 +110,7 @@ public class PostServiceImpl implements PostService {
                 .category(category)
                 .author(author)
                 .fake("").trust("").kudos("").disappointed("")
-                .createdAt(LocalDate.now().toString()).modifiedAt(null)
+                .createdAt(LocalDateTime.now().toString()).modifiedAt(null)
                 .isRated("").isMarked("").isBlocked("").canEdit("")
                 .url("http://anti.facebook.com/post?id=" + post.getId())
                 .images(imageRepository.findAllByPostId(post.getId()))
@@ -132,7 +133,7 @@ public class PostServiceImpl implements PostService {
         updatePost.setStatus(updatePostIn.getStatus());
         updatePost.setImageIds(updatePostIn.getImages());
         updatePost.setAutoAccept(updatePost.isAutoAccept());
-        updatePost.setModifiedAt(LocalDate.now().toString());
+        updatePost.setModifiedAt(LocalDateTime.now().toString());
 
         if (updatePostIn.getImagesDel() != null) {
             updatePostIn.getImagesDel().forEach(imageId -> {
@@ -197,7 +198,7 @@ public class PostServiceImpl implements PostService {
                 .postId(post.getId())
                 .reportType(ReportType.valueOf(subject))
                 .describe(details)
-                .createdAt(LocalDate.now().toString())
+                .createdAt(LocalDateTime.now().toString())
                 .build());
     }
 
@@ -209,7 +210,6 @@ public class PostServiceImpl implements PostService {
         if (post.isRestriction()) {
             throw new CustomException(ResponseCode.RESTRICTION);
         }
-
 
         Optional<React> oldReaction = reactRepository.findByPostIdAndUserId(id, DataContextHelper.getUserId());
 
@@ -229,7 +229,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Integer checkNewItem(String lastId, String categoryId) throws CustomException {
+    public Integer checkNewItem(String lastId, String categoryId) {
         Post post = postRepository.findTopByIdAndCategoryIdOrderByCreatedAtDesc(lastId, categoryId != null ? categoryId : "0")
                 .orElse(null);
 
