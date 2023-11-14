@@ -2,7 +2,6 @@ package com.example.antifacebookservice.controller.request.auth.out.post;
 
 import com.example.antifacebookservice.entity.Category;
 import com.example.antifacebookservice.entity.Image;
-import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.entity.Video;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +20,7 @@ public class PostDetailOut {
 
     private String described;
 
-    private AuthorOut author;
+    private UserOut author;
 
     private String modifiedAt;
 
@@ -51,13 +50,7 @@ public class PostDetailOut {
 
     private Category category;
 
-    @Data
-    public static class AuthorOut {
-        private String id;
-        private String name;
-        private String avatar;
-        private int coins;
-    }
+
 
 }
 

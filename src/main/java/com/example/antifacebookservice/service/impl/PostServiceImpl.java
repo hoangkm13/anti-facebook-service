@@ -7,6 +7,8 @@ import com.example.antifacebookservice.controller.request.auth.in.post.CreatePos
 import com.example.antifacebookservice.controller.request.auth.in.post.UpdatePostIn;
 import com.example.antifacebookservice.controller.request.auth.out.post.PostDetailOut;
 import com.example.antifacebookservice.controller.request.auth.out.post.PostResponseCUD;
+import com.example.antifacebookservice.controller.request.auth.out.post.ReactOut;
+import com.example.antifacebookservice.controller.request.auth.out.post.UserOut;
 import com.example.antifacebookservice.entity.*;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.repository.*;
@@ -14,10 +16,10 @@ import com.example.antifacebookservice.security.context.DataContextHelper;
 import com.example.antifacebookservice.service.PostService;
 import com.example.antifacebookservice.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +37,7 @@ public class PostServiceImpl implements PostService {
     private final CategoryRepository categoryRepository;
     private final ReportPostRepository reportPostRepository;
     private final UserService userService;
+    private final ModelMapper mapper;
 
 
     @Override
@@ -97,11 +100,7 @@ public class PostServiceImpl implements PostService {
                     .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Category not found!"));
         }
 
-        PostDetailOut.AuthorOut author = new PostDetailOut.AuthorOut();
-        author.setId(user.getId());
-        author.setName(user.getUsername());
-        author.setAvatar(user.getAvatar());
-        author.setCoins(user.getCoins());
+        UserOut author = mapper.map(user, UserOut.class);
 
         return PostDetailOut.builder()
                 .id(post.getId())
@@ -110,7 +109,7 @@ public class PostServiceImpl implements PostService {
                 .category(category)
                 .author(author)
                 .fake("").trust("").kudos("").disappointed("")
-                .createdAt("").modifiedAt("")
+                .createdAt(LocalDate.now().toString()).modifiedAt(null)
                 .isRated("").isMarked("").isBlocked("").canEdit("")
                 .url("http://anti.facebook.com/post?id=" + post.getId())
                 .images(imageRepository.findAllByPostId(post.getId()))
@@ -133,19 +132,20 @@ public class PostServiceImpl implements PostService {
         updatePost.setStatus(updatePostIn.getStatus());
         updatePost.setImageIds(updatePostIn.getImages());
         updatePost.setAutoAccept(updatePost.isAutoAccept());
+        updatePost.setModifiedAt(LocalDate.now().toString());
 
         if (updatePostIn.getImagesDel() != null) {
-                updatePostIn.getImagesDel().forEach(imageId -> {
-                    try {
-                        Image image = imageRepository.findById(imageId).orElseThrow(() ->
-                                new CustomException(ResponseCode.NOT_FOUND));
+            updatePostIn.getImagesDel().forEach(imageId -> {
+                try {
+                    Image image = imageRepository.findById(imageId).orElseThrow(() ->
+                            new CustomException(ResponseCode.NOT_FOUND));
 
-                        updatePost.getImageIds().remove(imageId);
-                        imageRepository.delete(image);
-                    } catch (CustomException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                    updatePost.getImageIds().remove(imageId);
+                    imageRepository.delete(image);
+                } catch (CustomException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
 
         int coinLeft = user.getCoins() - 1;
@@ -202,7 +202,15 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public void reactPost(String token, String id, FeelType feelType) throws CustomException {
+    public ReactOut reactPost(String token, String id, FeelType feelType) throws CustomException {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
+
+        if (post.isRestriction()) {
+            throw new CustomException(ResponseCode.RESTRICTION);
+        }
+
+
         Optional<React> oldReaction = reactRepository.findByPostIdAndUserId(id, DataContextHelper.getUserId());
 
         oldReaction.ifPresent(reactRepository::delete);
@@ -213,5 +221,22 @@ public class PostServiceImpl implements PostService {
         newReact.setFeelType(feelType);
 
         reactRepository.save(newReact);
+
+        int disappointed = reactRepository.countAllByFeelTypeAndPostId(FeelType.DISAPPOINTED, id);
+        int kudos = reactRepository.countAllByFeelTypeAndPostId(FeelType.KUDOS, id);
+
+        return new ReactOut(disappointed, kudos);
+    }
+
+    @Override
+    public Integer checkNewItem(String lastId, String categoryId) throws CustomException {
+        Post post = postRepository.findTopByIdAndCategoryIdOrderByCreatedAtDesc(lastId, categoryId != null ? categoryId : "0")
+                .orElse(null);
+
+        if (post == null) {
+            return 0;
+        }
+
+        return postRepository.countAllByCreatedAtAfter(post.getCreatedAt());
     }
 }
