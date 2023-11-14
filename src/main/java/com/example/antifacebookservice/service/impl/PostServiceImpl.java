@@ -3,12 +3,8 @@ package com.example.antifacebookservice.service.impl;
 import com.example.antifacebookservice.constant.FeelType;
 import com.example.antifacebookservice.constant.ReportType;
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.auth.in.post.CreatePostIn;
-import com.example.antifacebookservice.controller.request.auth.in.post.UpdatePostIn;
-import com.example.antifacebookservice.controller.request.auth.out.post.PostDetailOut;
-import com.example.antifacebookservice.controller.request.auth.out.post.PostResponseCUD;
-import com.example.antifacebookservice.controller.request.auth.out.post.ReactOut;
-import com.example.antifacebookservice.controller.request.auth.out.post.UserOut;
+import com.example.antifacebookservice.controller.request.auth.in.post.*;
+import com.example.antifacebookservice.controller.request.auth.out.post.*;
 import com.example.antifacebookservice.entity.*;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.repository.*;
@@ -17,19 +13,20 @@ import com.example.antifacebookservice.service.PostService;
 import com.example.antifacebookservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
-
-
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final ImageRepository imageRepository;
@@ -39,6 +36,8 @@ public class PostServiceImpl implements PostService {
     private final ReportPostRepository reportPostRepository;
     private final UserService userService;
     private final ModelMapper mapper;
+    private final SearchRepository searchRepository;
+    private final MarkRepository markRepository;
 
 
     @Override
@@ -57,7 +56,7 @@ public class PostServiceImpl implements PostService {
         newVideo.setThumb("Upload video");
         newVideo.setPostId(newPostId);
 
-        if (!video.isEmpty()) {
+        if (video != null) {
             //Luu vao cloud
             String vId = UUID.randomUUID().toString();
             String url = String.format("http://anti-facebook-cloud/%s-%s.com", vId, LocalDate.now());
@@ -238,5 +237,80 @@ public class PostServiceImpl implements PostService {
         }
 
         return postRepository.countAllByCreatedAtAfter(post.getCreatedAt());
+    }
+
+    @Override
+    public List<SearchListPostOut> searchPost(SearchPostIn searchPostIn) throws CustomException {
+        var searchedPost = this.postRepository.searchPostByDescribedLike(searchPostIn.getKeyword());
+
+        if (searchPostIn.getCount() < searchPostIn.getIndex()) {
+            throw new CustomException(ResponseCode.INDEX_CANNOT_BIGGER_THAN_COUNT);
+        }
+
+        if (searchPostIn.getCount() > searchedPost.size()) {
+            throw new CustomException(ResponseCode.COUNT_CANNOT_BIGGER_THAN_RESULT_SIZE);
+        }
+
+        if (searchPostIn.getCount() + searchPostIn.getIndex() > searchedPost.size()) {
+            throw new CustomException(ResponseCode.INDEX_CANNOT_BIGGER_THAN_COUNT);
+        }
+
+        var search = Search.builder().build();
+        search.setKeyword(searchPostIn.getKeyword());
+        search.setCreatedAt(LocalDateTime.now().toString());
+        search.setId(UUID.randomUUID().toString());
+
+        this.searchRepository.save(search);
+
+        List<SearchListPostOut> searchListPostOuts = new ArrayList<>();
+        var subList = searchedPost.subList(searchPostIn.getIndex(), searchPostIn.getIndex() + searchPostIn.getCount());
+        for (Post post: subList) {
+            new SearchListPostOut();
+            SearchListPostOut searchListPostOut;
+            searchListPostOut = mapper.map(post, SearchListPostOut.class);
+
+            var author = this.userService.findById(post.getUserId());
+            searchListPostOut.setAuthor(author);
+
+            searchListPostOut.setMarkComment(this.markRepository.findByPostId(post.getId()).size());
+            searchListPostOut.setFeel(this.reactRepository.findByPostId(post.getId()).size());
+
+            searchListPostOut.setIsFelt(this.reactRepository.findByPostIdAndUserId(post.getId(), DataContextHelper.getUserId()).isPresent());
+
+            searchListPostOuts.add(searchListPostOut);
+        }
+        return searchListPostOuts;
+    }
+
+    @Override
+    public List<Search> getListSearch(GetListSearchIn getListSearchIn) throws CustomException {
+        var searchedResults = this.searchRepository.findAll();
+
+        if (getListSearchIn.getCount() < getListSearchIn.getIndex()) {
+            throw new CustomException(ResponseCode.INDEX_CANNOT_BIGGER_THAN_COUNT);
+        }
+
+        if (getListSearchIn.getCount() > searchedResults.size()) {
+            throw new CustomException(ResponseCode.COUNT_CANNOT_BIGGER_THAN_RESULT_SIZE);
+        }
+
+        if (getListSearchIn.getCount() + getListSearchIn.getIndex() > searchedResults.size()) {
+            throw new CustomException(ResponseCode.INDEX_CANNOT_BIGGER_THAN_COUNT);
+        }
+
+        return searchedResults.subList(getListSearchIn.getIndex(), getListSearchIn.getIndex() + getListSearchIn.getCount());
+    }
+
+    @Override
+    public void deleteSavedSearch(DeleteSearchIn deleteSearchIn) throws CustomException {
+        if (!deleteSearchIn.getAll() && deleteSearchIn.getSearchId() == null) {
+            throw new CustomException(ResponseCode.METHOD_IS_INVALID);
+        }
+        if (!deleteSearchIn.getAll()) {
+            this.searchRepository.deleteById(deleteSearchIn.getSearchId());
+        } else {
+            this.searchRepository.deleteAll();
+        }
+
     }
 }

@@ -2,8 +2,12 @@ package com.example.antifacebookservice.controller.request.auth.in.post;
 
 import lombok.Data;
 
+import javax.validation.constraints.NotBlank;
+
 @Data
 public class DeleteSearchIn {
-    private Integer index;
-    private Integer count;
+    private String searchId;
+
+    @NotBlank
+    private Boolean all;
 }

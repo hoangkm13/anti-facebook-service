@@ -1,6 +1,7 @@
 package com.example.antifacebookservice.exception;
 
 
+import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.model.ApiResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -26,10 +27,10 @@ public class CustomExceptionHandler {
 //        return ApiResponse.failureWithCode(apiException.getHttpStatus().toString(), apiException.getMessage(), null, apiException.getHttpStatus());
 //    }
 
-//    @ExceptionHandler(value = Exception.class)
-//    public ApiResponse<String> handleError(HttpServletRequest req, Exception exception) {
-//        logger.error("Request: " + req.getRequestURL() + " raised " + exception);
-//        return ApiResponse.failureWithCode(ErrorCode.UNKNOWN_ERROR.toString(), exception.getMessage());
-//    }
+    @ExceptionHandler(value = Exception.class)
+    public ApiResponse<String> handleError(HttpServletRequest req, Exception exception) {
+        logger.error("Request: " + req.getRequestURL() + " raised " + exception);
+        return ApiResponse.failureWithCode(ResponseCode.SERVER_ERROR.getCode(), exception.getMessage());
+    }
 
 }

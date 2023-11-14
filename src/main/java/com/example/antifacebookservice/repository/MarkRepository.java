@@ -13,4 +13,6 @@ public interface MarkRepository extends MongoRepository<Mark, String> {
 
     @Query("{'_id' : { $in : ?0 } }")
     List<Mark> findMarksByChildComments(List<String> ids, Sort sort);
+
+    List<Mark> findByPostId(String postId);
 }
