@@ -25,5 +25,5 @@ public interface PostService {
 
     ReactOut reactPost(String token, String id, FeelType feelType) throws CustomException;
 
-    Integer checkNewItem(String lastId, String categoryId) throws CustomException;
+    Integer checkNewItem(String lastId, String categoryId);
 }

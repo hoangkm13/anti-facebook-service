@@ -1,5 +1,6 @@
 package com.example.antifacebookservice.controller.request.auth.in.comment;
 
+import com.example.antifacebookservice.constant.MarkType;
 import lombok.Data;
 
 @Data
@@ -8,8 +9,8 @@ public class MarkCommentIn {
     private String token;
     private String id;
     private String content;
-    private String index;
-    private String count;
+    private int index;
+    private int count;
     private String markId;
-    private String type;
+    private MarkType type;
 }

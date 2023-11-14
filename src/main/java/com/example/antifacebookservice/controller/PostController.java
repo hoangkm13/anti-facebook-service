@@ -2,7 +2,6 @@ package com.example.antifacebookservice.controller;
 
 import com.example.antifacebookservice.constant.FeelType;
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.auth.in.comment.MarkCommentIn;
 import com.example.antifacebookservice.controller.request.auth.in.post.CreatePostIn;
 import com.example.antifacebookservice.controller.request.auth.in.post.ListPostIn;
 import com.example.antifacebookservice.controller.request.auth.in.post.UpdatePostIn;
@@ -14,8 +13,6 @@ import com.example.antifacebookservice.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("v1/post")
