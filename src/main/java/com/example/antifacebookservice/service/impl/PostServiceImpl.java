@@ -230,12 +230,13 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Integer checkNewItem(String lastId, String categoryId) throws CustomException {
-            Post post = postRepository.findTopByIdOrderByCreatedAtDesc(lastId).orElse(null);
+        Post post = postRepository.findTopByIdAndCategoryIdOrderByCreatedAtDesc(lastId, categoryId != null ? categoryId : "0")
+                .orElse(null);
 
-            if (post == null) {
-                return 0;
-            }
+        if (post == null) {
+            return 0;
+        }
 
-            return postRepository.countAllByCreatedAtAfter(post.getCreatedAt());
+        return postRepository.countAllByCreatedAtAfter(post.getCreatedAt());
     }
 }

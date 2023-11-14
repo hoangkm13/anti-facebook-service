@@ -8,7 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface PostRepository extends MongoRepository<Post, String> {
-    Optional<Post> findTopByIdOrderByCreatedAtDesc(String id);
+    Optional<Post> findTopByIdAndCategoryIdOrderByCreatedAtDesc(String id, String categoryId);
 
     int countAllByCreatedAtAfter(String createdAt);
 
