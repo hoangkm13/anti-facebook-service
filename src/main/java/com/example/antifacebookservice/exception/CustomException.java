@@ -16,8 +16,11 @@ public class CustomException extends Exception {
     public CustomException(ResponseCode responseCode, String... args) {
         super(String.format(responseCode.getMessage(), args));
 
-        if (args != null) this.message = String.join(", ", args);
-        else this.message = responseCode.getMessage();
+        if (args != null && args.length > 0){
+            this.message = String.join(", ", args);
+        }else{
+            this.message = responseCode.getMessage();
+        }
 
         this.errorCode = responseCode.getCode();
     }
