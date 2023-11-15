@@ -1,8 +1,7 @@
 package com.example.antifacebookservice.controller.request.auth.out.comment;
 
 import com.example.antifacebookservice.constant.MarkType;
-import com.example.antifacebookservice.controller.request.auth.out.post.UserOut;
-import lombok.AllArgsConstructor;
+import com.example.antifacebookservice.controller.request.auth.out.user.AuthorOut;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,6 +13,6 @@ public class MarkCommentOut {
     private String id;
     private String markContent;
     private MarkType typeOfMark;
-    private UserOut poster;
+    private AuthorOut poster;
     private List<MarkCommentOut> comments;
 }

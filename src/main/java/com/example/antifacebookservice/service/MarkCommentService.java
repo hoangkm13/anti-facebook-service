@@ -6,5 +6,5 @@ import com.example.antifacebookservice.exception.CustomException;
 
 public interface MarkCommentService {
     MarkCommentOut setMarkComment(MarkCommentIn markCommentIn) throws CustomException;
-    MarkCommentOut getMarkComment(String token, String id, int count) throws CustomException;
+    MarkCommentOut getMarkComment(String id, int index, int count) throws CustomException;
 }
