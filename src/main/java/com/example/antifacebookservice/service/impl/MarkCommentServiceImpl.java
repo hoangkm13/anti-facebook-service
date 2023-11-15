@@ -3,11 +3,13 @@ package com.example.antifacebookservice.service.impl;
 import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.controller.request.auth.in.comment.MarkCommentIn;
 import com.example.antifacebookservice.controller.request.auth.out.comment.MarkCommentOut;
-import com.example.antifacebookservice.controller.request.auth.out.post.UserOut;
+import com.example.antifacebookservice.controller.request.auth.out.user.AuthorOut;
+import com.example.antifacebookservice.controller.request.auth.out.user.UserOut;
 import com.example.antifacebookservice.entity.Mark;
 import com.example.antifacebookservice.entity.Post;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
+import com.example.antifacebookservice.helper.Common;
 import com.example.antifacebookservice.repository.MarkRepository;
 import com.example.antifacebookservice.repository.PostRepository;
 import com.example.antifacebookservice.security.context.DataContextHelper;
@@ -66,30 +68,17 @@ public class MarkCommentServiceImpl implements MarkCommentService {
                 mark.get().getChildComments().add(markOrComment.getId());
                 markRepository.save(mark.get());
 
-                Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
 
                 int beginIndex = markCommentIn.getIndex();
-                int endIndex =markCommentIn.getIndex() + markCommentIn.getCount() + 1;
-                markRepository.findMarksByChildComments(mark.get().getChildComments(), sort)
-                        .subList(beginIndex, endIndex)
-                        .forEach(m -> {
-                            try {
-                                User commentPoster = userService.findById(DataContextHelper.getUserId());
-                                childComments.add(MarkCommentOut.builder()
-                                        .id(m.getId())
-                                        .markContent(m.getMarkContent())
-                                        .poster(mapper.map(commentPoster, UserOut.class))
-                                        .build());
-                            } catch (CustomException e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
+                int endIndex = markCommentIn.getIndex() + markCommentIn.getCount() + 1;
+
+                childComments = getChildComments(mark.get(), Sort.Direction.DESC, beginIndex, endIndex);
 
                 return MarkCommentOut.builder()
                         .id(mark.get().getId())
                         .markContent(mark.get().getMarkContent())
                         .typeOfMark(mark.get().getTypeOfMark())
-                        .poster(mapper.map(user, UserOut.class))
+                        .poster(mapper.map(user, AuthorOut.class))
                         .comments(childComments)
                         .build();
             }
@@ -99,21 +88,59 @@ public class MarkCommentServiceImpl implements MarkCommentService {
                 .id(markOrComment.getId())
                 .markContent(markOrComment.getMarkContent())
                 .typeOfMark(markOrComment.getTypeOfMark())
-                .poster(mapper.map(user, UserOut.class))
+                .poster(mapper.map(user, AuthorOut.class))
                 .comments(childComments)
                 .build();
     }
 
     @Override
-    public MarkCommentOut getMarkComment(String token, String id, int count) throws CustomException {
-        Post post = postRepository.findById(id)
-                .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
-
-        if (post.isRestriction()) {
-            throw new CustomException(ResponseCode.RESTRICTION);
-        }
-
+    public MarkCommentOut getMarkComment(String id, int index, int count) throws CustomException {
+//        User user = userService.findByUsername(DataContextHelper.getUserName());
+//
+//        Post post = postRepository.findById(id)
+//                .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
+//
+//        if (post.isRestriction()) {
+//            throw new CustomException(ResponseCode.RESTRICTION);
+//        }
+//
+////        Mark mark = markRepository.findByPostId(id).orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Mark not found!"));
+//
+//        List<MarkCommentOut> childComments = getChildComments(mark, Sort.Direction.DESC, index, count);
+//
+//        return MarkCommentOut.builder()
+//                .id(mark.getId())
+//                .markContent(mark.getMarkContent())
+//                .poster(mapper.map(user, UserOut.class))
+//                .typeOfMark(mark.getTypeOfMark())
+//                .comments(childComments)
+//                .build();
         return null;
+    }
+
+    private List<MarkCommentOut> getChildComments(Mark mark, Sort.Direction direction, int index, int count) throws CustomException {
+        List<MarkCommentOut> childComments = new ArrayList<>();
+
+        Sort sort = Sort.by(direction, "createdAt");
+        List<Mark> marks = markRepository.findMarksByChildComments(mark.getChildComments(), sort);
+
+        Common.checkValidIndexCount(index, count, marks.size());
+
+        marks.subList(index, index + count + 1)
+                .forEach(m -> {
+                    try {
+                        User commentPoster = userService.findById(DataContextHelper.getUserId());
+                        childComments.add(MarkCommentOut.builder()
+                                .id(m.getId())
+                                .markContent(m.getMarkContent())
+                                .poster(mapper.map(commentPoster, AuthorOut.class))
+                                .build());
+                    } catch (CustomException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        return childComments;
     }
 }
 

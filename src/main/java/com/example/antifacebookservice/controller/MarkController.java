@@ -15,8 +15,8 @@ public class MarkController {
     private final MarkCommentService markCommentService;
 
     @GetMapping("/get-mark-comment")
-    public ApiResponse<?> getMarkComment(String token, String id, int count) throws CustomException {
-        return ApiResponse.successWithResult(markCommentService.getMarkComment(token, id, count));
+    public ApiResponse<?> getMarkComment(String id, int index, int count) throws CustomException {
+        return ApiResponse.successWithResult(markCommentService.getMarkComment(id, index, count));
     }
 
     @PostMapping("/set-mark-comment")

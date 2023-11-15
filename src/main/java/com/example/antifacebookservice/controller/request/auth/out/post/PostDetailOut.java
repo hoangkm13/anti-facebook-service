@@ -1,5 +1,7 @@
 package com.example.antifacebookservice.controller.request.auth.out.post;
 
+import com.example.antifacebookservice.controller.request.auth.out.user.AuthorOut;
+import com.example.antifacebookservice.controller.request.auth.out.user.UserOut;
 import com.example.antifacebookservice.entity.Category;
 import com.example.antifacebookservice.entity.Image;
 import com.example.antifacebookservice.entity.Video;
@@ -20,7 +22,7 @@ public class PostDetailOut {
 
     private String described;
 
-    private UserOut author;
+    private AuthorOut author;
 
     private String modifiedAt;
 

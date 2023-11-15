@@ -1,4 +1,4 @@
-package com.example.antifacebookservice.controller.request.auth.out.post;
+package com.example.antifacebookservice.controller.request.auth.out.user;
 
 import lombok.Data;
 
@@ -7,5 +7,4 @@ public  class UserOut {
     private String id;
     private String username;
     private String avatar;
-    private int coins;
 }
