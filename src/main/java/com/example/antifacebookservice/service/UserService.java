@@ -1,8 +1,10 @@
 package com.example.antifacebookservice.service;
 
-import com.example.antifacebookservice.controller.request.auth.CheckCodeVerifyRequest;
-import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
-import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
+import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
+import com.example.antifacebookservice.controller.request.in.user.CheckCodeVerifyRequest;
+import com.example.antifacebookservice.controller.request.in.user.ResetPasswordDTO;
+import com.example.antifacebookservice.controller.request.in.user.SignUpDTO;
+import com.example.antifacebookservice.controller.request.out.friendRequest.FriendRequestOut;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.User;
@@ -27,4 +29,6 @@ public interface UserService {
     User changeInfoAfterSignUp(String username, String currentUserId, String userId, MultipartFile avatarFile) throws CustomException, IOException;
 
     User resetPassword(ResetPasswordDTO resetPasswordDTO, String currentUserId, String userId) throws CustomException;
+
+    FriendRequestOut sendFriendRequest(FriendRequestIn friendRequestIn) throws CustomException;
 }

@@ -1,6 +1,6 @@
 package com.example.antifacebookservice.service;
 
-import com.example.antifacebookservice.controller.request.auth.out.user.BlockUserOut;
+import com.example.antifacebookservice.controller.request.out.user.BlockUserOut;
 import com.example.antifacebookservice.exception.CustomException;
 
 import java.util.List;

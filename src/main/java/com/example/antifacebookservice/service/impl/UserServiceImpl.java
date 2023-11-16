@@ -1,19 +1,24 @@
 package com.example.antifacebookservice.service.impl;
 
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.auth.CheckCodeVerifyRequest;
-import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
-import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
+import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
+import com.example.antifacebookservice.controller.request.in.user.CheckCodeVerifyRequest;
+import com.example.antifacebookservice.controller.request.in.user.ResetPasswordDTO;
+import com.example.antifacebookservice.controller.request.in.user.SignUpDTO;
+import com.example.antifacebookservice.controller.request.out.friendRequest.FriendRequestOut;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.CodeVerify;
+import com.example.antifacebookservice.entity.FriendRequest;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.repository.CodeVerifyRepository;
+import com.example.antifacebookservice.repository.FriendRequestRepository;
 import com.example.antifacebookservice.repository.UserRepository;
+import com.example.antifacebookservice.security.context.DataContextHelper;
 import com.example.antifacebookservice.service.UserService;
 import com.example.antifacebookservice.util.AuthUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,19 +34,13 @@ import java.time.LocalTime;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService, UserDetailsService {
     private final UserRepository userRepository;
     private final CodeVerifyRepository codeVerifyRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
-
-    @Autowired
-    public UserServiceImpl(UserRepository userRepository, CodeVerifyRepository codeVerifyRepository, PasswordEncoder passwordEncoder, AuthUtils authUtils) {
-        this.userRepository = userRepository;
-        this.codeVerifyRepository = codeVerifyRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.authUtils = authUtils;
-    }
+    private final FriendRequestRepository friendRequestRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) {
@@ -151,7 +150,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public User findById(String UserId) throws CustomException {
         var user = this.userRepository.findById(UserId);
         if (user.isEmpty()) {
-            throw new CustomException(ResponseCode.EXISTED);
+            throw new CustomException(ResponseCode.NOT_EXISTED);
         }
 
         return user.get();
@@ -179,6 +178,30 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         existedUser.setPasswordHash(passwordEncoder.encode(resetPasswordDTO.getPassword()));
 
         return this.userRepository.save(existedUser);
+    }
+
+    @Override
+    public FriendRequestOut sendFriendRequest(FriendRequestIn friendRequestIn) throws CustomException {
+        var existedReceiveUser = findById(friendRequestIn.getUserReceiveId());
+
+        var existedFriendRequest = this.friendRequestRepository.findByUserSentIdAndUserReceiveId(DataContextHelper.getUserId(), friendRequestIn.getUserReceiveId());
+
+        if (existedFriendRequest != null) {
+            throw new CustomException(ResponseCode.FRIEND_REQUEST_EXISTED);
+        }
+
+        FriendRequest friendRequest = new FriendRequest();
+        friendRequest.setUserSentId(DataContextHelper.getUserId());
+        friendRequest.setUserReceiveId(friendRequestIn.getUserReceiveId());
+        friendRequest.setIsAccepted(false);
+
+        this.friendRequestRepository.save(friendRequest);
+
+        var countFriendRequest = this.friendRequestRepository.countFriendRequestByUserSentId(DataContextHelper.getUserId());
+
+        var result = FriendRequestOut.builder().build();
+        result.setNumberOfPendingFriendRequest(countFriendRequest);
+        return result;
     }
 
     private User updateUser(String username, User existedUser, MultipartFile avatarFile) throws IOException {

@@ -1,7 +1,7 @@
 package com.example.antifacebookservice.service.impl;
 
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.auth.out.user.BlockUserOut;
+import com.example.antifacebookservice.controller.request.out.user.BlockUserOut;
 import com.example.antifacebookservice.entity.BlockUser;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;

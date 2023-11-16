@@ -1,6 +1,6 @@
 package com.example.antifacebookservice.controller;
 
-import com.example.antifacebookservice.controller.request.auth.in.comment.MarkCommentIn;
+import com.example.antifacebookservice.controller.request.in.comment.MarkCommentIn;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.model.ApiResponse;
 import com.example.antifacebookservice.service.MarkCommentService;
