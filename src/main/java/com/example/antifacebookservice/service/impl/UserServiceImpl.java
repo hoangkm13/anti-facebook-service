@@ -2,16 +2,20 @@ package com.example.antifacebookservice.service.impl;
 
 import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
+import com.example.antifacebookservice.controller.request.in.friendRequest.ProcessFriendRequest;
 import com.example.antifacebookservice.controller.request.in.user.CheckCodeVerifyRequest;
+import com.example.antifacebookservice.controller.request.in.user.GetSuggestedFriends;
 import com.example.antifacebookservice.controller.request.in.user.ResetPasswordDTO;
 import com.example.antifacebookservice.controller.request.in.user.SignUpDTO;
 import com.example.antifacebookservice.controller.request.out.friendRequest.FriendRequestOut;
+import com.example.antifacebookservice.controller.request.out.user.SuggestedFriendOut;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.CodeVerify;
 import com.example.antifacebookservice.entity.FriendRequest;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
+import com.example.antifacebookservice.helper.Common;
 import com.example.antifacebookservice.repository.CodeVerifyRepository;
 import com.example.antifacebookservice.repository.FriendRequestRepository;
 import com.example.antifacebookservice.repository.UserRepository;
@@ -19,6 +23,7 @@ import com.example.antifacebookservice.security.context.DataContextHelper;
 import com.example.antifacebookservice.service.UserService;
 import com.example.antifacebookservice.util.AuthUtils;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,11 +32,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +48,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
     private final FriendRequestRepository friendRequestRepository;
+    private final ModelMapper modelMapper;
 
     @Override
     public UserDetails loadUserByUsername(String username) {
@@ -182,7 +190,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     public FriendRequestOut sendFriendRequest(FriendRequestIn friendRequestIn) throws CustomException {
-        var existedReceiveUser = findById(friendRequestIn.getUserReceiveId());
+        findById(friendRequestIn.getUserReceiveId());
 
         var existedFriendRequest = this.friendRequestRepository.findByUserSentIdAndUserReceiveId(DataContextHelper.getUserId(), friendRequestIn.getUserReceiveId());
 
@@ -202,6 +210,85 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         var result = FriendRequestOut.builder().build();
         result.setNumberOfPendingFriendRequest(countFriendRequest);
         return result;
+    }
+
+    @Override
+    public List<SuggestedFriendOut> getListSuggestedFriends(GetSuggestedFriends getSuggestedFriends) throws CustomException {
+        List<User> allUsers = this.userRepository.findAll();
+        allUsers.removeIf(a -> Objects.equals(a.getId(), DataContextHelper.getUserId()));
+
+        Common.checkValidIndexCount(getSuggestedFriends.getCount(), getSuggestedFriends.getIndex(), allUsers.size());
+
+        var indexed = allUsers.subList(getSuggestedFriends.getIndex(), getSuggestedFriends.getIndex() + getSuggestedFriends.getCount());
+
+        List<SuggestedFriendOut> recommendFriends = new ArrayList<>();
+        for (User user : indexed) {
+            if (!CollectionUtils.isEmpty(user.getFriendLists())) {
+                SuggestedFriendOut suggestedFriendOut = new SuggestedFriendOut();
+                int i = 0;
+                for (String mutualFriendId : user.getFriendLists()) {
+                    if (findById(DataContextHelper.getUserId()).getFriendLists().contains(mutualFriendId)) {
+                        i++;
+                    }
+                }
+                if (i > 0) {
+                    suggestedFriendOut.setSameFriends(i);
+                    this.modelMapper.map(user, suggestedFriendOut);
+                    recommendFriends.add(suggestedFriendOut);
+                }
+            }
+
+        }
+
+//        var suggestedFriend = indexed.stream().map(a -> modelMapper.map(a, SuggestedFriendOut.class)).collect(Collectors.toList());
+//
+//        var alo = this.friendRequestRepository.findByUserSentIdAndUserReceiveId()
+//        for (SuggestedFriendOut suggestedFriendOut : suggestedFriend) {
+//
+//        }
+        return recommendFriends;
+    }
+
+    @Override
+    public Boolean setAcceptFriend(ProcessFriendRequest processFriendRequest) throws CustomException {
+        var userSent = findById(processFriendRequest.getUserSentId());
+        var userReceive = findById(DataContextHelper.getUserId());
+
+        var existedFriendRequest = this.friendRequestRepository.findByUserSentIdAndUserReceiveId(processFriendRequest.getUserSentId(), DataContextHelper.getUserId());
+
+        if (existedFriendRequest == null) {
+            throw new CustomException(ResponseCode.FRIEND_REQUEST_NOT_EXISTED);
+        }
+
+        existedFriendRequest.setIsAccepted(processFriendRequest.getIsAccept());
+
+        this.friendRequestRepository.save(existedFriendRequest);
+
+        if (existedFriendRequest.getIsAccepted()) {
+            if (CollectionUtils.isEmpty(userSent.getFriendLists())) {
+                List<String> newFriends = new ArrayList<>();
+                newFriends.add(DataContextHelper.getUserId());
+
+                userSent.setFriendLists(newFriends);
+            } else {
+                userSent.getFriendLists().add(DataContextHelper.getUserId());
+            }
+
+            this.userRepository.save(userSent);
+
+            if (CollectionUtils.isEmpty(userReceive.getFriendLists())) {
+                List<String> newFriends = new ArrayList<>();
+                newFriends.add(processFriendRequest.getUserSentId());
+
+                userReceive.setFriendLists(newFriends);
+            } else {
+                userReceive.getFriendLists().add(processFriendRequest.getUserSentId());
+            }
+
+            this.userRepository.save(userReceive);
+        }
+
+        return existedFriendRequest.getIsAccepted();
     }
 
     private User updateUser(String username, User existedUser, MultipartFile avatarFile) throws IOException {

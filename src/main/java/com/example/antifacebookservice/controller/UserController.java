@@ -1,6 +1,8 @@
 package com.example.antifacebookservice.controller;
 
 import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
+import com.example.antifacebookservice.controller.request.in.friendRequest.ProcessFriendRequest;
+import com.example.antifacebookservice.controller.request.in.user.GetSuggestedFriends;
 import com.example.antifacebookservice.controller.request.out.user.BlockUserOut;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.model.ApiResponse;
@@ -32,8 +34,20 @@ public class UserController {
     }
 
     @PostMapping("/send-friend-request")
-    public ApiResponse<?> getListBlocks(@RequestBody FriendRequestIn friendRequestIn) throws CustomException {
+    public ApiResponse<?> sendFriendRequest(@RequestBody FriendRequestIn friendRequestIn) throws CustomException {
         var result = userService.sendFriendRequest(friendRequestIn);
+        return ApiResponse.successWithResult(result);
+    }
+
+    @PostMapping("/set-accept-friend")
+    public ApiResponse<?> setAcceptFriend(@RequestBody ProcessFriendRequest processFriendRequest) throws CustomException {
+        var result = userService.setAcceptFriend(processFriendRequest);
+        return ApiResponse.successWithResult(result);
+    }
+
+    @PostMapping("/get-list-suggested-friends")
+    public ApiResponse<?> getListSuggestedFriends(@RequestBody GetSuggestedFriends getSuggestedFriends) throws CustomException {
+        var result = userService.getListSuggestedFriends(getSuggestedFriends);
         return ApiResponse.successWithResult(result);
     }
 }

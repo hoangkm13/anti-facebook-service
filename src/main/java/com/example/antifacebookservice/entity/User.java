@@ -48,6 +48,7 @@ public class User {
     private Boolean active;
 
     private List<String> postLists;
+    private List<String> friendLists;
 
 //    private String country;
 

@@ -12,6 +12,7 @@ public enum ResponseCode {
     USER_IS_NOT_VALIDATED(9995, "User is not validated"),
     EXISTED(9996, "User existed"),
     FRIEND_REQUEST_EXISTED(9993, "Friend Request Existed"),
+    FRIEND_REQUEST_NOT_EXISTED(9991, "Friend Request Not Existed"),
     NOT_EXISTED(9995, "User not existed"),
     METHOD_IS_INVALID(9997, "Method is invalid"),
     TOKEN_IS_INVALID(9998, "Token is invalid"),
