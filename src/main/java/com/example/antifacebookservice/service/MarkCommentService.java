@@ -1,7 +1,7 @@
 package com.example.antifacebookservice.service;
 
-import com.example.antifacebookservice.controller.request.in.comment.MarkCommentIn;
-import com.example.antifacebookservice.controller.request.out.comment.MarkCommentOut;
+import com.example.antifacebookservice.controller.request.auth.in.comment.MarkCommentIn;
+import com.example.antifacebookservice.controller.request.auth.out.comment.MarkCommentOut;
 import com.example.antifacebookservice.exception.CustomException;
 
 public interface MarkCommentService {

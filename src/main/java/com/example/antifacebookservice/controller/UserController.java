@@ -1,7 +1,10 @@
 package com.example.antifacebookservice.controller;
 
-import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
-import com.example.antifacebookservice.controller.request.out.user.BlockUserOut;
+import com.example.antifacebookservice.controller.request.auth.in.setting.PushSettingIn;
+import com.example.antifacebookservice.controller.request.auth.in.user.BlockUserIn;
+import com.example.antifacebookservice.controller.request.auth.in.version.CheckVersionIn;
+import com.example.antifacebookservice.controller.request.auth.out.user.BlockUserOut;
+import com.example.antifacebookservice.entity.PushSetting;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.model.ApiResponse;
 import com.example.antifacebookservice.service.BlockService;
@@ -20,9 +23,9 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/set-block")
-    public ApiResponse<?> setBlock(@RequestBody List<String> blockIds) throws CustomException {
-        blockService.setBlock(blockIds);
-        return ApiResponse.successWithResult(null, "Block success!");
+    public ApiResponse<?> setBlock(@RequestBody BlockUserIn blockUserIn) throws CustomException {
+        String status = blockService.setBlock(blockUserIn);
+        return ApiResponse.successWithResult(null, status);
     }
 
     @PostMapping("/get-list-blocks")
@@ -31,9 +34,20 @@ public class UserController {
         return ApiResponse.successWithResult(list);
     }
 
-    @PostMapping("/send-friend-request")
-    public ApiResponse<?> getListBlocks(@RequestBody FriendRequestIn friendRequestIn) throws CustomException {
-        var result = userService.sendFriendRequest(friendRequestIn);
-        return ApiResponse.successWithResult(result);
+    @PostMapping("/get-push-setting")
+    public ApiResponse<?> getPushSetting(String token) throws CustomException {
+        var settings = userService.getPushSetting(token);
+        return ApiResponse.successWithResult(settings);
+    }
+
+    @PostMapping("/set-push-setting")
+    public ApiResponse<?> setPushSetting(String token, @RequestBody PushSettingIn pushSettingIn) throws IllegalAccessException {
+        userService.setPushSetting(token, pushSettingIn);
+        return ApiResponse.successWithResult(null, "Setting success!");
+    }
+
+    @PostMapping("/check-new-version")
+    public ApiResponse<?> checkNewVersion(@RequestBody CheckVersionIn checkVersionIn) throws CustomException {
+        return ApiResponse.successWithResult(userService.checkNewVersion(checkVersionIn));
     }
 }

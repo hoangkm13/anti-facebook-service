@@ -1,9 +1,10 @@
 package com.example.antifacebookservice.service.impl;
 
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.in.comment.MarkCommentIn;
-import com.example.antifacebookservice.controller.request.out.comment.MarkCommentOut;
-import com.example.antifacebookservice.controller.request.out.user.AuthorOut;
+import com.example.antifacebookservice.controller.request.auth.in.comment.MarkCommentIn;
+import com.example.antifacebookservice.controller.request.auth.out.comment.MarkCommentOut;
+import com.example.antifacebookservice.controller.request.auth.out.user.AuthorOut;
+import com.example.antifacebookservice.controller.request.auth.out.user.UserOut;
 import com.example.antifacebookservice.entity.Mark;
 import com.example.antifacebookservice.entity.Post;
 import com.example.antifacebookservice.entity.User;
@@ -67,7 +68,6 @@ public class MarkCommentServiceImpl implements MarkCommentService {
                 mark.get().getChildComments().add(markOrComment.getId());
                 markRepository.save(mark.get());
 
-
                 int beginIndex = markCommentIn.getIndex();
                 int endIndex = markCommentIn.getIndex() + markCommentIn.getCount() + 1;
 
@@ -103,7 +103,7 @@ public class MarkCommentServiceImpl implements MarkCommentService {
 //            throw new CustomException(ResponseCode.RESTRICTION);
 //        }
 //
-////        Mark mark = markRepository.findByPostId(id).orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Mark not found!"));
+//        List<Mark> mark = markRepository.findByPostId(id);
 //
 //        List<MarkCommentOut> childComments = getChildComments(mark, Sort.Direction.DESC, index, count);
 //

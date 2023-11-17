@@ -16,4 +16,6 @@ public interface MarkRepository extends MongoRepository<Mark, String> {
     List<Mark> findMarksByChildComments(List<String> ids, Sort sort);
 
     List<Mark> findByPostId(String postId);
+
+    boolean existsByPostIdAndUserId(String postId, String userId);
 }

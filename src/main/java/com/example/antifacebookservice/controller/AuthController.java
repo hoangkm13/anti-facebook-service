@@ -1,7 +1,7 @@
 package com.example.antifacebookservice.controller;
 
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.in.user.*;
+import com.example.antifacebookservice.controller.request.auth.*;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.User;

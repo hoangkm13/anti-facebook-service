@@ -3,12 +3,12 @@ package com.example.antifacebookservice.service.impl;
 import com.example.antifacebookservice.constant.FeelType;
 import com.example.antifacebookservice.constant.ReportType;
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.in.post.*;
-import com.example.antifacebookservice.controller.request.out.post.PostDetailOut;
-import com.example.antifacebookservice.controller.request.out.post.PostResponseCUD;
-import com.example.antifacebookservice.controller.request.out.post.ReactOut;
-import com.example.antifacebookservice.controller.request.out.post.SearchListPostOut;
-import com.example.antifacebookservice.controller.request.out.user.AuthorOut;
+import com.example.antifacebookservice.controller.request.auth.in.post.*;
+import com.example.antifacebookservice.controller.request.auth.out.post.PostDetailOut;
+import com.example.antifacebookservice.controller.request.auth.out.post.PostResponseCUD;
+import com.example.antifacebookservice.controller.request.auth.out.post.ReactOut;
+import com.example.antifacebookservice.controller.request.auth.out.post.SearchListPostOut;
+import com.example.antifacebookservice.controller.request.auth.out.user.AuthorOut;
 import com.example.antifacebookservice.entity.*;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.helper.Common;
@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -35,12 +36,13 @@ public class PostServiceImpl implements PostService {
     private final ImageRepository imageRepository;
     private final ReactRepository reactRepository;
     private final VideoRepository videoRepository;
+    private final BlockRepository blockRepository;
     private final CategoryRepository categoryRepository;
     private final ReportPostRepository reportPostRepository;
-    private final UserService userService;
-    private final ModelMapper mapper;
     private final SearchRepository searchRepository;
     private final MarkRepository markRepository;
+    private final UserService userService;
+    private final ModelMapper mapper;
 
 
     @Override
@@ -86,7 +88,6 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostDetailOut getPostDetail(String token, String id) throws CustomException {
-        User user = userService.findByUsername(DataContextHelper.getUserName());
         Category category = null;
         Video video = null;
 
@@ -103,7 +104,14 @@ public class PostServiceImpl implements PostService {
                     .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Category not found!"));
         }
 
+        User user = userService.findById(post.getUserId());
         AuthorOut author = mapper.map(user, AuthorOut.class);
+
+        boolean isBlocked = blockRepository.existsByBlockerIdAndBlockedId(user.getId(), DataContextHelper.getUserId());
+        boolean isMarked = markRepository.existsByPostIdAndUserId(post.getId(), DataContextHelper.getUserId());
+
+        int disappointed = reactRepository.countAllByFeelTypeAndPostId(FeelType.DISAPPOINTED, id);
+        int kudos = reactRepository.countAllByFeelTypeAndPostId(FeelType.KUDOS, id);
 
         return PostDetailOut.builder()
                 .id(post.getId())
@@ -111,9 +119,10 @@ public class PostServiceImpl implements PostService {
                 .described(post.getDescribed())
                 .category(category)
                 .author(author)
-                .fake("").trust("").kudos("").disappointed("")
+                .fake("").trust("").kudos(kudos).disappointed(disappointed)
                 .createdAt(LocalDateTime.now().toString()).modifiedAt(null)
-                .isRated("").isMarked("").isBlocked("").canEdit("")
+                .isRated("").isMarked(isMarked).isBlocked(isBlocked).banned(post.isRestriction())
+                .canEdit(!post.isRestriction() && Objects.equals(author.getId(), DataContextHelper.getUserId()))
                 .url("http://anti.facebook.com/post?id=" + post.getId())
                 .images(imageRepository.findAllByPostId(post.getId()))
                 .video(video)
@@ -189,7 +198,7 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
 
         if (reportPostRepository.existsByPostIdAndUserId(post.getId(), user.getId())) {
-            throw new CustomException(ResponseCode.EXISTED, "You are already report this post!");
+            throw new CustomException(ResponseCode.WARNING, "Warning: Post is already reported!");
         }
 
         if (post.isRestriction()) {
@@ -294,6 +303,5 @@ public class PostServiceImpl implements PostService {
         } else {
             this.searchRepository.deleteAll();
         }
-
     }
 }
