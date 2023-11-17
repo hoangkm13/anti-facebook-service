@@ -1,10 +1,10 @@
 package com.example.antifacebookservice.controller;
 
-import com.example.antifacebookservice.controller.request.auth.in.setting.PushSettingIn;
-import com.example.antifacebookservice.controller.request.auth.in.user.BlockUserIn;
-import com.example.antifacebookservice.controller.request.auth.in.version.CheckVersionIn;
-import com.example.antifacebookservice.controller.request.auth.out.user.BlockUserOut;
-import com.example.antifacebookservice.entity.PushSetting;
+import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
+import com.example.antifacebookservice.controller.request.in.setting.PushSettingIn;
+import com.example.antifacebookservice.controller.request.in.user.BlockUserIn;
+import com.example.antifacebookservice.controller.request.in.version.CheckVersionIn;
+import com.example.antifacebookservice.controller.request.out.user.BlockUserOut;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.model.ApiResponse;
 import com.example.antifacebookservice.service.BlockService;
@@ -34,6 +34,13 @@ public class UserController {
         return ApiResponse.successWithResult(list);
     }
 
+
+    @PostMapping("/send-friend-request")
+    public ApiResponse<?> sendFriendRequest(@RequestBody FriendRequestIn friendRequestIn) throws CustomException {
+        var result = userService.sendFriendRequest(friendRequestIn);
+        return ApiResponse.successWithResult(result);
+    }
+
     @PostMapping("/get-push-setting")
     public ApiResponse<?> getPushSetting(String token) throws CustomException {
         var settings = userService.getPushSetting(token);
@@ -50,4 +57,5 @@ public class UserController {
     public ApiResponse<?> checkNewVersion(@RequestBody CheckVersionIn checkVersionIn) throws CustomException {
         return ApiResponse.successWithResult(userService.checkNewVersion(checkVersionIn));
     }
+
 }

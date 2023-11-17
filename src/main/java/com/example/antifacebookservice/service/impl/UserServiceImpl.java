@@ -2,25 +2,21 @@ package com.example.antifacebookservice.service.impl;
 
 import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.constant.SettingStatus;
-import com.example.antifacebookservice.controller.request.auth.CheckCodeVerifyRequest;
-import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
-import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
-import com.example.antifacebookservice.controller.request.auth.in.setting.PushSettingIn;
-import com.example.antifacebookservice.controller.request.auth.in.version.CheckVersionIn;
-import com.example.antifacebookservice.controller.request.auth.out.user.UserVersionOut;
-import com.example.antifacebookservice.controller.request.auth.out.version.CheckVersionOut;
+import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
+import com.example.antifacebookservice.controller.request.in.user.CheckCodeVerifyRequest;
+import com.example.antifacebookservice.controller.request.in.user.ResetPasswordDTO;
+import com.example.antifacebookservice.controller.request.in.user.SignUpDTO;
+import com.example.antifacebookservice.controller.request.in.setting.PushSettingIn;
+import com.example.antifacebookservice.controller.request.in.version.CheckVersionIn;
+import com.example.antifacebookservice.controller.request.out.friendRequest.FriendRequestOut;
+import com.example.antifacebookservice.controller.request.out.user.UserVersionOut;
+import com.example.antifacebookservice.controller.request.out.version.CheckVersionOut;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
-import com.example.antifacebookservice.entity.AppVersion;
-import com.example.antifacebookservice.entity.CodeVerify;
-import com.example.antifacebookservice.entity.PushSetting;
-import com.example.antifacebookservice.entity.User;
+import com.example.antifacebookservice.entity.*;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.helper.Common;
-import com.example.antifacebookservice.repository.AppVersionRepository;
-import com.example.antifacebookservice.repository.CodeVerifyRepository;
-import com.example.antifacebookservice.repository.PushSettingRepository;
-import com.example.antifacebookservice.repository.UserRepository;
+import com.example.antifacebookservice.repository.*;
 import com.example.antifacebookservice.security.context.DataContextHelper;
 import com.example.antifacebookservice.service.UserService;
 import com.example.antifacebookservice.util.AuthUtils;
@@ -38,7 +34,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
@@ -51,6 +46,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final AppVersionRepository appVersionRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
+    private final FriendRequestRepository friendRequestRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) {
@@ -160,7 +156,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public User findById(String UserId) throws CustomException {
         var user = this.userRepository.findById(UserId);
         if (user.isEmpty()) {
-            throw new CustomException(ResponseCode.EXISTED);
+            throw new CustomException(ResponseCode.NOT_EXISTED);
         }
 
         return user.get();
@@ -193,6 +189,32 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         return this.userRepository.save(existedUser);
     }
+
+    @Override
+    public FriendRequestOut sendFriendRequest(FriendRequestIn friendRequestIn) throws CustomException {
+        var existedReceiveUser = findById(friendRequestIn.getUserReceiveId());
+
+        var existedFriendRequest = this.friendRequestRepository.findByUserSentIdAndUserReceiveId(DataContextHelper.getUserId(), friendRequestIn.getUserReceiveId());
+
+        if (existedFriendRequest != null) {
+            throw new CustomException(ResponseCode.FRIEND_REQUEST_EXISTED);
+        }
+
+        FriendRequest friendRequest = new FriendRequest();
+        friendRequest.setUserSentId(DataContextHelper.getUserId());
+        friendRequest.setUserReceiveId(friendRequestIn.getUserReceiveId());
+        friendRequest.setIsAccepted(false);
+
+        this.friendRequestRepository.save(friendRequest);
+
+        var countFriendRequest = this.friendRequestRepository.countFriendRequestByUserSentId(DataContextHelper.getUserId());
+
+        var result = FriendRequestOut.builder().build();
+        result.setNumberOfPendingFriendRequest(countFriendRequest);
+        return result;
+    }
+
+
 
     @Override
     public Map<String, SettingStatus> getPushSetting(String token) throws CustomException {

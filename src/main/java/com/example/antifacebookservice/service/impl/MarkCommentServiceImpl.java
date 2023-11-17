@@ -1,10 +1,9 @@
 package com.example.antifacebookservice.service.impl;
 
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.auth.in.comment.MarkCommentIn;
-import com.example.antifacebookservice.controller.request.auth.out.comment.MarkCommentOut;
-import com.example.antifacebookservice.controller.request.auth.out.user.AuthorOut;
-import com.example.antifacebookservice.controller.request.auth.out.user.UserOut;
+import com.example.antifacebookservice.controller.request.in.comment.MarkCommentIn;
+import com.example.antifacebookservice.controller.request.out.comment.MarkCommentOut;
+import com.example.antifacebookservice.controller.request.out.user.AuthorOut;
 import com.example.antifacebookservice.entity.Mark;
 import com.example.antifacebookservice.entity.Post;
 import com.example.antifacebookservice.entity.User;

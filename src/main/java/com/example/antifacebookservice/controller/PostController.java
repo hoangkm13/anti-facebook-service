@@ -2,10 +2,10 @@ package com.example.antifacebookservice.controller;
 
 import com.example.antifacebookservice.constant.FeelType;
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.auth.in.post.*;
-import com.example.antifacebookservice.controller.request.auth.out.post.PostDetailOut;
-import com.example.antifacebookservice.controller.request.auth.out.post.PostResponseCUD;
-import com.example.antifacebookservice.controller.request.auth.out.post.SearchListPostOut;
+import com.example.antifacebookservice.controller.request.in.post.*;
+import com.example.antifacebookservice.controller.request.out.post.PostDetailOut;
+import com.example.antifacebookservice.controller.request.out.post.PostResponseCUD;
+import com.example.antifacebookservice.controller.request.out.post.SearchListPostOut;
 import com.example.antifacebookservice.entity.Search;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.model.ApiResponse;
