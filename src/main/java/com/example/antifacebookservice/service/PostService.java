@@ -29,8 +29,7 @@ public interface PostService {
     Integer checkNewItem(String lastId, String categoryId);
 
     List<SearchListPostOut> searchPost(SearchPostIn searchPostIn) throws CustomException;
-
     List<Search> getListSearch(GetListSearchIn getListSearchIn) throws CustomException;
-
     void deleteSavedSearch(DeleteSearchIn deleteSearchIn) throws CustomException;
+
 }

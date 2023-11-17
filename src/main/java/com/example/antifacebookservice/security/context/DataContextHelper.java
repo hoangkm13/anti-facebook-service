@@ -19,6 +19,7 @@ public class DataContextHelper {
                 .accessToken(accessToken)
                 .userName(user.getUsername())
                 .userId(authentication.getName())
+                .isActive(user.getActive())
                 .build());
     }
 
@@ -37,5 +38,8 @@ public class DataContextHelper {
 
     public static String getUserId() {
         return getDataContext().getUserId();
+    }
+    public static Boolean isUserActive() {
+        return getDataContext().isActive();
     }
 }

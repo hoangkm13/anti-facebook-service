@@ -1,24 +1,27 @@
 package com.example.antifacebookservice.service.impl;
 
 import com.example.antifacebookservice.constant.ResponseCode;
+import com.example.antifacebookservice.constant.SettingStatus;
 import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
 import com.example.antifacebookservice.controller.request.in.user.CheckCodeVerifyRequest;
 import com.example.antifacebookservice.controller.request.in.user.ResetPasswordDTO;
 import com.example.antifacebookservice.controller.request.in.user.SignUpDTO;
+import com.example.antifacebookservice.controller.request.in.setting.PushSettingIn;
+import com.example.antifacebookservice.controller.request.in.version.CheckVersionIn;
 import com.example.antifacebookservice.controller.request.out.friendRequest.FriendRequestOut;
+import com.example.antifacebookservice.controller.request.out.user.UserVersionOut;
+import com.example.antifacebookservice.controller.request.out.version.CheckVersionOut;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
-import com.example.antifacebookservice.entity.CodeVerify;
-import com.example.antifacebookservice.entity.FriendRequest;
-import com.example.antifacebookservice.entity.User;
+import com.example.antifacebookservice.entity.*;
 import com.example.antifacebookservice.exception.CustomException;
-import com.example.antifacebookservice.repository.CodeVerifyRepository;
-import com.example.antifacebookservice.repository.FriendRequestRepository;
-import com.example.antifacebookservice.repository.UserRepository;
+import com.example.antifacebookservice.helper.Common;
+import com.example.antifacebookservice.repository.*;
 import com.example.antifacebookservice.security.context.DataContextHelper;
 import com.example.antifacebookservice.service.UserService;
 import com.example.antifacebookservice.util.AuthUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.time.LocalTime;
 import java.util.*;
 
@@ -38,6 +42,8 @@ import java.util.*;
 public class UserServiceImpl implements UserService, UserDetailsService {
     private final UserRepository userRepository;
     private final CodeVerifyRepository codeVerifyRepository;
+    private final PushSettingRepository pushSettingRepository;
+    private final AppVersionRepository appVersionRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
     private final FriendRequestRepository friendRequestRepository;
@@ -174,8 +180,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 //        if (!Objects.equals(userId, existedUser.getId())) {
 //            throw new CustomException(ErrorCode.UNAUTHORIZED);
 //        }
-
-        existedUser.setPasswordHash(passwordEncoder.encode(resetPasswordDTO.getPassword()));
+        ;
+        if (passwordEncoder.matches(resetPasswordDTO.getCurrentPassword(), existedUser.getPasswordHash())) {
+            existedUser.setPasswordHash(passwordEncoder.encode(resetPasswordDTO.getPassword()));
+        } else {
+            throw new CustomException(ResponseCode.PARAMETER_VALUE_IS_INVALID, "Current password is wrong!");
+        }
 
         return this.userRepository.save(existedUser);
     }
@@ -202,6 +212,89 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         var result = FriendRequestOut.builder().build();
         result.setNumberOfPendingFriendRequest(countFriendRequest);
         return result;
+    }
+
+
+
+    @Override
+    public Map<String, SettingStatus> getPushSetting(String token) throws CustomException {
+
+        var currentSetting = pushSettingRepository.findByUserId(DataContextHelper.getUserId());
+
+        if (currentSetting.isEmpty()) {
+            throw new CustomException(ResponseCode.NOT_FOUND, "Setting not found!");
+        }
+
+        return currentSetting.get().getSettings();
+    }
+
+    @Override
+    public void setPushSetting(String token, PushSettingIn pushSettingIn) throws IllegalAccessException {
+        PushSetting pushSetting = new PushSetting();
+        pushSetting.setId(Common.generateUUID());
+        pushSetting.setUserId(DataContextHelper.getUserId());
+
+        var currentSetting = pushSettingRepository.findByUserId(DataContextHelper.getUserId());
+
+        if (currentSetting.isPresent()) {
+            pushSetting = currentSetting.get();
+        }
+
+        Map<String, SettingStatus> settingMap = new HashMap<>();
+
+        Field[] fields = PushSettingIn.class.getDeclaredFields();
+
+        for (Field f : fields) {
+            f.setAccessible(true);
+            settingMap.put(f.getName(), (SettingStatus) f.get(pushSettingIn));
+        }
+        pushSetting.setSettings(settingMap);
+
+        //Save push-setting
+        pushSettingRepository.save(pushSetting);
+    }
+
+    @Override
+    public CheckVersionOut checkNewVersion(CheckVersionIn checkVersionIn) throws CustomException {
+        AppVersion appVersion = appVersionRepository.findAll(Sort.by(Sort.Direction.DESC, "releaseDate")).get(0);
+
+        int compareResult = compareVersions(checkVersionIn.getLastUpdate(), appVersion.getVersionNumber());
+        if (compareResult == 1) {
+            UserVersionOut userVersionOut = new UserVersionOut();
+            userVersionOut.setId(DataContextHelper.getUserId());
+            userVersionOut.setActive(DataContextHelper.isUserActive());
+
+            return CheckVersionOut.builder()
+                    .appVersion(appVersion)
+                    .user(userVersionOut)
+                    .badge(0)
+                    .unreadMessage(0)
+                    .now("")
+                    .build();
+        } else if (compareResult == -1) {
+            throw new CustomException(ResponseCode.SERVER_ERROR, "Something wrong!");
+        }
+        return null;
+    }
+
+    private int compareVersions(String version1, String version2) {
+        String[] v1 = version1.split("\\.");
+        String[] v2 = version2.split("\\.");
+
+        int length = Math.max(v1.length, v2.length);
+
+        for (int i = 0; i < length; i++) {
+            int num1 = (i < v1.length) ? Integer.parseInt(v1[i]) : 0;
+            int num2 = (i < v2.length) ? Integer.parseInt(v2[i]) : 0;
+
+            if (num1 < num2) {
+                return 1;
+            } else if (num1 > num2) {
+                return -1;
+            }
+        }
+
+        return 0; // versions are equal
     }
 
     private User updateUser(String username, User existedUser, MultipartFile avatarFile) throws IOException {

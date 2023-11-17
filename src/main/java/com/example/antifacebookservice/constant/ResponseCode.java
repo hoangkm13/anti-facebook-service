@@ -18,7 +18,8 @@ public enum ResponseCode {
     SERVER_ERROR(9999, "Server error"),
     INDEX_CANNOT_BIGGER_THAN_COUNT(1003, "Index cao hơn số đếm"),
     COUNT_CANNOT_BIGGER_THAN_RESULT_SIZE(1003, "Số đếm không được nhiều hơn số kết quả"),
-    PARAMETER_VALUE_IS_INVALID(1004, "Paramenter value is invalid");
+    PARAMETER_VALUE_IS_INVALID(1004, "Paramenter value is invalid"),
+    WARNING(1111, "WARNING");
 
     private final String message;
     private final Integer code;

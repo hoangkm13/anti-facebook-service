@@ -9,4 +9,6 @@ public class DataContext {
     private String accessToken;
     private String userId;
     private String userName;
+    private boolean isActive;
+
 }

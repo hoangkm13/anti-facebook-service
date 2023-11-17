@@ -29,17 +29,19 @@ public class PostDetailOut {
 
     private String trust;
 
-    private String kudos;
+    private Integer kudos;
 
-    private String disappointed;
+    private Integer disappointed;
 
     private String isRated;
 
-    private String isMarked;
+    private Boolean isMarked;
 
-    private String isBlocked;
+    private Boolean isBlocked;
 
-    private String canEdit;
+    private Boolean banned;
+
+    private Boolean canEdit;
 
     private String canRate;
 
@@ -50,8 +52,6 @@ public class PostDetailOut {
     private Video video;
 
     private Category category;
-
-
 
 }
 

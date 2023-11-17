@@ -1,6 +1,8 @@
 package com.example.antifacebookservice.service.impl;
 
+import com.example.antifacebookservice.constant.BlockType;
 import com.example.antifacebookservice.constant.ResponseCode;
+import com.example.antifacebookservice.controller.request.in.user.BlockUserIn;
 import com.example.antifacebookservice.controller.request.out.user.BlockUserOut;
 import com.example.antifacebookservice.entity.BlockUser;
 import com.example.antifacebookservice.entity.User;
@@ -28,21 +30,36 @@ public class BlockServiceImpl implements BlockService {
     private final ModelMapper mapper;
 
     @Override
-    public void setBlock(List<String> userIds) throws CustomException {
+    public String setBlock(BlockUserIn blockUserIn) throws CustomException {
         String currentUserId = DataContextHelper.getUserId();
-        List<BlockUser> blockUsers = new ArrayList<>();
-        for (String id : userIds) {
-            if (userRepository.existsById(id) && !blockRepository.existsByBlockerIdAndBlockedId(currentUserId, id)) {
-                blockUsers.add(BlockUser.builder()
-                        .blockerId(currentUserId)
-                        .blockedId(id)
-                        .build());
-            } else {
-                throw new CustomException(ResponseCode.NOT_FOUND, "User not found!");
-            }
+
+        String blockedId = blockUserIn.getUserId();
+
+        if (!userRepository.existsById(blockedId)) {
+            throw new CustomException(ResponseCode.NOT_FOUND, "User not found!");
         }
 
-        blockRepository.saveAll(blockUsers);
+        if (blockUserIn.getBlockType() == BlockType.BLOCK) {
+            if (blockRepository.existsByBlockerIdAndBlockedId(currentUserId, blockedId)) {
+                throw new CustomException(ResponseCode.WARNING, "Warning: User is already blocked.");
+            }
+
+            blockRepository.save(BlockUser.builder()
+                    .blockerId(currentUserId)
+                    .blockedId(blockedId)
+                    .build());
+
+            return "Block success!";
+        } else {
+            if (!blockRepository.existsByBlockerIdAndBlockedId(currentUserId, blockedId)) {
+                throw new CustomException(ResponseCode.WARNING, "Warning: User not blocked. Please only unblock users you have previously blocked");
+            }
+
+            blockRepository.findByBlockerIdAndBlockedId(currentUserId, blockedId).ifPresent(
+                    blockRepository::delete
+            );
+            return "Unblock success!";
+        }
     }
 
     @Override
