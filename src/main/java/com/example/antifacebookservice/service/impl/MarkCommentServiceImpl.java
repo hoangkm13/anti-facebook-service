@@ -67,7 +67,6 @@ public class MarkCommentServiceImpl implements MarkCommentService {
                 mark.get().getChildComments().add(markOrComment.getId());
                 markRepository.save(mark.get());
 
-
                 int beginIndex = markCommentIn.getIndex();
                 int endIndex = markCommentIn.getIndex() + markCommentIn.getCount() + 1;
 
@@ -103,7 +102,7 @@ public class MarkCommentServiceImpl implements MarkCommentService {
 //            throw new CustomException(ResponseCode.RESTRICTION);
 //        }
 //
-////        Mark mark = markRepository.findByPostId(id).orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Mark not found!"));
+//        List<Mark> mark = markRepository.findByPostId(id);
 //
 //        List<MarkCommentOut> childComments = getChildComments(mark, Sort.Direction.DESC, index, count);
 //
