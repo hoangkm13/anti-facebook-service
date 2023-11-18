@@ -5,34 +5,28 @@ import com.example.antifacebookservice.constant.SettingStatus;
 import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
 import com.example.antifacebookservice.controller.request.in.friendRequest.GetFriendRequest;
 import com.example.antifacebookservice.controller.request.in.friendRequest.ProcessFriendRequest;
-import com.example.antifacebookservice.controller.request.in.user.CheckCodeVerifyRequest;
-import com.example.antifacebookservice.controller.request.in.user.GetSuggestedFriends;
-import com.example.antifacebookservice.controller.request.in.user.ResetPasswordDTO;
-import com.example.antifacebookservice.controller.request.in.user.SignUpDTO;
 import com.example.antifacebookservice.controller.request.in.setting.PushSettingIn;
+import com.example.antifacebookservice.controller.request.in.user.*;
 import com.example.antifacebookservice.controller.request.in.version.CheckVersionIn;
 import com.example.antifacebookservice.controller.request.out.friendRequest.FriendRequestOut;
 import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOut;
 import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOutWrapper;
+import com.example.antifacebookservice.controller.request.out.user.SuggestedFriendOut;
+import com.example.antifacebookservice.controller.request.out.user.UserOut;
 import com.example.antifacebookservice.controller.request.out.user.UserVersionOut;
 import com.example.antifacebookservice.controller.request.out.version.CheckVersionOut;
-import com.example.antifacebookservice.controller.request.out.user.SuggestedFriendOut;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.*;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.helper.Common;
 import com.example.antifacebookservice.repository.*;
-import com.example.antifacebookservice.helper.Common;
-import com.example.antifacebookservice.repository.CodeVerifyRepository;
-import com.example.antifacebookservice.repository.FriendRequestRepository;
-import com.example.antifacebookservice.repository.UserRepository;
 import com.example.antifacebookservice.security.context.DataContextHelper;
 import com.example.antifacebookservice.service.UserService;
 import com.example.antifacebookservice.util.AuthUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -49,7 +43,6 @@ import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +55,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final AuthUtils authUtils;
     private final FriendRequestRepository friendRequestRepository;
     private final ModelMapper modelMapper;
+    private final ConversationRepository conversationRepository;
+    private final MessageRepository messageRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) {
@@ -231,7 +226,6 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
 
-
     @Override
     public Map<String, SettingStatus> getPushSetting(String token) throws CustomException {
 
@@ -291,6 +285,49 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             throw new CustomException(ResponseCode.SERVER_ERROR, "Something wrong!");
         }
         return null;
+    }
+
+    @Override
+    public List<Conversation> getListConversation(String id) throws CustomException {
+        Conversation conversation = new Conversation();
+        conversation.setId(UUID.randomUUID().toString());
+
+        conversation.setPartner(this.modelMapper.map(this.findById("e1642fd2-1512-4e16-aa2c-8e5a5bc333ee"), UserOut.class));
+        Message message = new Message();
+        message.setId(UUID.randomUUID().toString());
+        message.setContent("test " + LocalDateTime.now().toString());
+        message.setUnread(new Random().nextBoolean());
+        message.setCreated(LocalDateTime.now().toString());
+
+        conversation.setLastMessage(message);
+        this.messageRepository.save(message);
+
+        this.conversationRepository.save(conversation);
+
+        return this.conversationRepository.findAll();
+    }
+
+    @Override
+    public Conversation getConversation(GetConversation getConversation) throws CustomException {
+        return this.conversationRepository.findById(getConversation.getId()).get();
+    }
+
+    @Override
+    public Conversation setRead(GetConversation getConversation) throws CustomException {
+        var conv = this.conversationRepository.findById(getConversation.getId()).get();
+        conv.getLastMessage().setUnread(true);
+
+        return conv;
+    }
+
+    @Override
+    public void deleteMessage(DeleteMessage deleteMessage) throws CustomException {
+        this.messageRepository.deleteById(deleteMessage.getId());
+    }
+
+    @Override
+    public void deleteConversation(DeleteConversation deleteConversation) throws CustomException {
+        this.messageRepository.deleteById(deleteConversation.getId());
     }
 
     private int compareVersions(String version1, String version2) {
@@ -418,7 +455,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 //        }
         List<GetRequestedFriendOut> getRequestedFriendOutList = new ArrayList<>();
 
-        for (User user: indexed) {
+        for (User user : indexed) {
             getRequestedFriendOutList.add(this.modelMapper.map(user, GetRequestedFriendOut.class));
         }
 

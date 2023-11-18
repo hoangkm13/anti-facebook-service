@@ -9,7 +9,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class FriendRequest {
     @Id
     private String id;
-
     private String userSentId;
     private String userReceiveId;
     private Boolean isAccepted;
