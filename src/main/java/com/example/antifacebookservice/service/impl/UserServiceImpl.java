@@ -441,7 +441,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 //            if (!CollectionUtils.isEmpty(user.getFriendLists())) {
 //                GetRequestedFriendOut getRequestedFriendOut = new GetRequestedFriendOut();
 //                int i = 0;
-//                for (String mutualFriendId : user.getFriendLists()) {
+//                for (String mutualFriendId https://code-with-me.global.jetbrains.com/DiSn9OP4lehWwXOweyHxwQ#p=IU&fp=175D1F9F07492FD6D937EDF5BE96D90EEBA76538BC70EF78CD7C8B370A3F804B&newUi=true: user.getFriendLists()) {
 //                    if (findById(DataContextHelper.getUserId()).getFriendLists().contains(mutualFriendId)) {
 //                        i++;
 //                    }
