@@ -1,6 +1,7 @@
 package com.example.antifacebookservice.controller;
 
 import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
+import com.example.antifacebookservice.controller.request.in.friendRequest.GetFriendRequest;
 import com.example.antifacebookservice.controller.request.in.setting.PushSettingIn;
 import com.example.antifacebookservice.controller.request.in.user.BlockUserIn;
 import com.example.antifacebookservice.controller.request.in.version.CheckVersionIn;
@@ -72,4 +73,14 @@ public class UserController {
         return ApiResponse.successWithResult(userService.checkNewVersion(checkVersionIn));
     }
 
+
+    @PostMapping("/get-requested-friends")
+    public ApiResponse<?> getRequestedFriend(@RequestBody GetFriendRequest getFriendRequest) throws CustomException {
+        return ApiResponse.successWithResult(userService.getRequestedFriend(getFriendRequest));
+    }
+
+    @PostMapping("/get-user-friends")
+    public ApiResponse<?> getUserFriends(@RequestBody GetFriendRequest getFriendRequest) throws CustomException {
+        return ApiResponse.successWithResult(userService.getUserFriends(getFriendRequest));
+    }
 }

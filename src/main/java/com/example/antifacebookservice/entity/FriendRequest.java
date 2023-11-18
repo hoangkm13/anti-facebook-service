@@ -13,4 +13,5 @@ public class FriendRequest {
     private String userSentId;
     private String userReceiveId;
     private Boolean isAccepted;
+    private String createdAt;
 }

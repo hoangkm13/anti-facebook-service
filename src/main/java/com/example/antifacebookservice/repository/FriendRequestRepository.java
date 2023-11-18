@@ -11,4 +11,5 @@ public interface FriendRequestRepository extends MongoRepository<FriendRequest, 
     Integer countFriendRequestByUserSentId(String userSentId);
 
     FriendRequest findByUserSentIdAndUserReceiveId(String userSentId, String userReceiveId);
+    List<FriendRequest> findByUserReceiveIdAndIsAccepted(String userReceiveId, boolean isAccepted);
 }

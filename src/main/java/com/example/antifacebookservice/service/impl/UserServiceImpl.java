@@ -3,6 +3,7 @@ package com.example.antifacebookservice.service.impl;
 import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.constant.SettingStatus;
 import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
+import com.example.antifacebookservice.controller.request.in.friendRequest.GetFriendRequest;
 import com.example.antifacebookservice.controller.request.in.friendRequest.ProcessFriendRequest;
 import com.example.antifacebookservice.controller.request.in.user.CheckCodeVerifyRequest;
 import com.example.antifacebookservice.controller.request.in.user.GetSuggestedFriends;
@@ -11,6 +12,8 @@ import com.example.antifacebookservice.controller.request.in.user.SignUpDTO;
 import com.example.antifacebookservice.controller.request.in.setting.PushSettingIn;
 import com.example.antifacebookservice.controller.request.in.version.CheckVersionIn;
 import com.example.antifacebookservice.controller.request.out.friendRequest.FriendRequestOut;
+import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOut;
+import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOutWrapper;
 import com.example.antifacebookservice.controller.request.out.user.UserVersionOut;
 import com.example.antifacebookservice.controller.request.out.version.CheckVersionOut;
 import com.example.antifacebookservice.controller.request.out.user.SuggestedFriendOut;
@@ -43,6 +46,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -215,6 +219,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         friendRequest.setUserSentId(DataContextHelper.getUserId());
         friendRequest.setUserReceiveId(friendRequestIn.getUserReceiveId());
         friendRequest.setIsAccepted(false);
+        friendRequest.setCreatedAt(LocalDateTime.now().toString());
 
         this.friendRequestRepository.save(friendRequest);
 
@@ -335,15 +340,95 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             }
 
         }
-
-//        var suggestedFriend = indexed.stream().map(a -> modelMapper.map(a, SuggestedFriendOut.class)).collect(Collectors.toList());
-//
-//        var alo = this.friendRequestRepository.findByUserSentIdAndUserReceiveId()
-//        for (SuggestedFriendOut suggestedFriendOut : suggestedFriend) {
-//
-//        }
         return recommendFriends;
     }
+
+    @Override
+    public GetRequestedFriendOutWrapper getRequestedFriend(GetFriendRequest getFriendRequest) throws CustomException {
+        List<FriendRequest> friendRequests = this.friendRequestRepository.findByUserReceiveIdAndIsAccepted(DataContextHelper.getUserId(), false);
+
+        Common.checkValidIndexCount(getFriendRequest.getCount(), getFriendRequest.getIndex(), friendRequests.size());
+
+        var indexed = friendRequests.subList(getFriendRequest.getIndex(), getFriendRequest.getIndex() + getFriendRequest.getCount());
+
+        List<String> listUserIds = new ArrayList<>();
+        for (FriendRequest friendRequest : indexed) {
+            listUserIds.add(friendRequest.getUserSentId());
+        }
+
+        var users = this.userRepository.findAllById(listUserIds);
+
+        List<GetRequestedFriendOut> getRequestedFriendOutList = new ArrayList<>();
+
+        users.removeIf(a -> Objects.equals(a.getId(), DataContextHelper.getUserId()));
+
+        for (User user : users) {
+            if (!CollectionUtils.isEmpty(user.getFriendLists())) {
+                GetRequestedFriendOut getRequestedFriendOut = new GetRequestedFriendOut();
+                int i = 0;
+                for (String mutualFriendId : user.getFriendLists()) {
+                    if (findById(DataContextHelper.getUserId()).getFriendLists().contains(mutualFriendId)) {
+                        i++;
+                    }
+                }
+                if (i > 0) {
+                    getRequestedFriendOut.setSameFriends(i);
+                    this.modelMapper.map(user, getRequestedFriendOut);
+                    getRequestedFriendOutList.add(getRequestedFriendOut);
+                }
+            }
+        }
+
+        GetRequestedFriendOutWrapper getRequestedFriendOutWrapper = new GetRequestedFriendOutWrapper();
+        getRequestedFriendOutWrapper.setRequest(getRequestedFriendOutList);
+        getRequestedFriendOutWrapper.setTotal(listUserIds.size());
+
+        return getRequestedFriendOutWrapper;
+    }
+
+    @Override
+    public GetRequestedFriendOutWrapper getUserFriends(GetFriendRequest getFriendRequest) throws CustomException {
+        List<User> result = this.userRepository.findAllById(userRepository.findById(DataContextHelper.getUserId()).get().getFriendLists());
+
+        Common.checkValidIndexCount(getFriendRequest.getCount(), getFriendRequest.getIndex(), result.size());
+
+        var indexed = result.subList(getFriendRequest.getIndex(), getFriendRequest.getIndex() + getFriendRequest.getCount());
+
+//        var users = this.userRepository.findAllById(userRepository.findById(DataContextHelper.getUserId()).get().getFriendLists());
+//
+//        users.removeIf(a -> Objects.equals(a.getId(), DataContextHelper.getUserId()));
+//
+//        List<GetRequestedFriendOut> getRequestedFriendOutList = new ArrayList<>();
+//
+//        for (User user : indexed) {
+//            if (!CollectionUtils.isEmpty(user.getFriendLists())) {
+//                GetRequestedFriendOut getRequestedFriendOut = new GetRequestedFriendOut();
+//                int i = 0;
+//                for (String mutualFriendId : user.getFriendLists()) {
+//                    if (findById(DataContextHelper.getUserId()).getFriendLists().contains(mutualFriendId)) {
+//                        i++;
+//                    }
+//                }
+//                if (i > 0) {
+//                    getRequestedFriendOut.setSameFriends(i);
+//                    this.modelMapper.map(user, getRequestedFriendOut);
+//                    getRequestedFriendOutList.add(getRequestedFriendOut);
+//                }
+//            }
+//        }
+        List<GetRequestedFriendOut> getRequestedFriendOutList = new ArrayList<>();
+
+        for (User user: indexed) {
+            getRequestedFriendOutList.add(this.modelMapper.map(user, GetRequestedFriendOut.class));
+        }
+
+        GetRequestedFriendOutWrapper getRequestedFriendOutWrapper = new GetRequestedFriendOutWrapper();
+        getRequestedFriendOutWrapper.setRequest(getRequestedFriendOutList);
+        getRequestedFriendOutWrapper.setTotal(indexed.size());
+
+        return getRequestedFriendOutWrapper;
+    }
+
 
     @Override
     public Boolean setAcceptFriend(ProcessFriendRequest processFriendRequest) throws CustomException {
