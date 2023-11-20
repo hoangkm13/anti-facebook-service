@@ -13,9 +13,9 @@ import com.example.antifacebookservice.controller.request.out.friendRequest.GetR
 import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOutWrapper;
 import com.example.antifacebookservice.controller.request.out.notification.UnreadNotificationOut;
 import com.example.antifacebookservice.controller.request.out.user.BaseUserOut;
-import com.example.antifacebookservice.controller.request.out.user.UserVersionOut;
 import com.example.antifacebookservice.controller.request.out.user.SuggestedFriendOut;
 import com.example.antifacebookservice.controller.request.out.user.UserInfoOut;
+import com.example.antifacebookservice.controller.request.out.user.UserVersionOut;
 import com.example.antifacebookservice.controller.request.out.version.CheckVersionOut;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
@@ -383,7 +383,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public void setDevToken(String token, String devType, String devToken) {
+    public void setDevToken(String token, Integer devType, String devToken) {
         DevToken newDevToken = new DevToken();
         newDevToken.setToken(token);
         newDevToken.setDevToken(devToken);

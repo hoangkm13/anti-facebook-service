@@ -198,7 +198,7 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
 
         if (reportPostRepository.existsByPostIdAndUserId(post.getId(), user.getId())) {
-            throw new CustomException(ResponseCode.WARNING, "Warning: Post is already reported!");
+            throw new CustomException(ResponseCode.EXISTED, "Post is already reported!");
         }
 
         if (post.isRestriction()) {
@@ -207,6 +207,7 @@ public class PostServiceImpl implements PostService {
 
         reportPostRepository.save(ReportPost.builder()
                 .postId(post.getId())
+                .userId(DataContextHelper.getUserId())
                 .reportType(ReportType.valueOf(subject))
                 .describe(details)
                 .createdAt(LocalDateTime.now().toString())

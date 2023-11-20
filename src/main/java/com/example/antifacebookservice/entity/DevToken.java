@@ -6,7 +6,7 @@ import lombok.Data;
 public class DevToken {
     private String id;
     private String token;
-    private String devType;
+    private Integer devType;
     private String devToken;
     private String userId;
 }

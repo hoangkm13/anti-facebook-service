@@ -4,8 +4,8 @@ import com.example.antifacebookservice.constant.SettingStatus;
 import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
 import com.example.antifacebookservice.controller.request.in.friendRequest.GetFriendRequest;
 import com.example.antifacebookservice.controller.request.in.friendRequest.ProcessFriendRequest;
-import com.example.antifacebookservice.controller.request.in.user.*;
 import com.example.antifacebookservice.controller.request.in.setting.PushSettingIn;
+import com.example.antifacebookservice.controller.request.in.user.*;
 import com.example.antifacebookservice.controller.request.in.version.CheckVersionIn;
 import com.example.antifacebookservice.controller.request.out.friendRequest.FriendRequestOut;
 import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOutWrapper;
@@ -22,8 +22,8 @@ import com.example.antifacebookservice.exception.CustomException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 public interface UserService {
     User findByUsername(String username) throws CustomException;
@@ -75,5 +75,5 @@ public interface UserService {
 
     void deleteConversation(DeleteConversation deleteConversation) throws CustomException;
 
-    void setDevToken(String token, String devType, String devToken);
+    void setDevToken(String token, Integer devType, String devToken);
 }

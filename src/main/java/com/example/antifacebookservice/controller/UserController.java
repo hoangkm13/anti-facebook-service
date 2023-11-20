@@ -122,7 +122,7 @@ public class UserController {
     }
 
     @PostMapping("/set-devtoken")
-    public ApiResponse<?> setDevToken(String token, String devType, String devToken) {
+    public ApiResponse<?> setDevToken(String token, Integer devType, String devToken) {
         userService.setDevToken(token, devType, devToken);
         return ApiResponse.successWithResult(null);
     }
