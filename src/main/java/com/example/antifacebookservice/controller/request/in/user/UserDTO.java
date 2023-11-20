@@ -1,5 +1,6 @@
 package com.example.antifacebookservice.controller.request.in.user;
 
+import com.example.antifacebookservice.entity.Image;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -37,13 +38,15 @@ public class UserDTO {
     @Length(max = 20, min = 6)
     private String password;
 
+    private String description;
+
     private String country;
 
-    private String github;
+    private String city;
 
-    private String facebook;
+    private String address;
 
-    private String avatar;
+    private String link;
 
     private String role;
 

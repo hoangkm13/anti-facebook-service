@@ -7,5 +7,5 @@ import java.util.List;
 @Data
 public class GetRequestedFriendOutWrapper {
     private Integer total;
-    private List<GetRequestedFriendOut> request;
+    private List<GetRequestedFriendOutBase> request;
 }

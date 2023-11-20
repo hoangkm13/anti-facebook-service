@@ -9,11 +9,13 @@ import com.example.antifacebookservice.controller.request.in.setting.PushSetting
 import com.example.antifacebookservice.controller.request.in.user.*;
 import com.example.antifacebookservice.controller.request.in.version.CheckVersionIn;
 import com.example.antifacebookservice.controller.request.out.friendRequest.FriendRequestOut;
-import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOut;
+import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOutBase;
 import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOutWrapper;
-import com.example.antifacebookservice.controller.request.out.user.SuggestedFriendOut;
-import com.example.antifacebookservice.controller.request.out.user.UserOut;
+import com.example.antifacebookservice.controller.request.out.notification.UnreadNotificationOut;
+import com.example.antifacebookservice.controller.request.out.user.BaseUserOut;
 import com.example.antifacebookservice.controller.request.out.user.UserVersionOut;
+import com.example.antifacebookservice.controller.request.out.user.SuggestedFriendOut;
+import com.example.antifacebookservice.controller.request.out.user.UserInfoOut;
 import com.example.antifacebookservice.controller.request.out.version.CheckVersionOut;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
@@ -54,9 +56,12 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
     private final FriendRequestRepository friendRequestRepository;
+    private final NotificationRepository notificationRepository;
     private final ModelMapper modelMapper;
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
+    private final DevTokenRepository devTokenRepository;
+    private final ImageRepository imageRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) {
@@ -79,6 +84,24 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         }
 
         return optionalUser.get();
+    }
+
+    @Override
+    public UserInfoOut getUserInfo(String token, String userId) throws CustomException {
+        User user = findById(userId);
+        UserInfoOut userInfoOut = this.modelMapper.map(user, UserInfoOut.class);
+
+        List<String> friendList = user.getFriendLists();
+        userInfoOut.setListing(friendList != null ? (long) friendList.size() : 0L);
+        userInfoOut.setIsFriend(friendList != null && friendList.contains(DataContextHelper.getUserId()));
+
+        userInfoOut.setLink("http://anti-facebook-service/...");
+
+        if (!Objects.equals(userId, DataContextHelper.getUserId())) {
+            userInfoOut.setCoins(null);
+        }
+
+        return userInfoOut;
     }
 
     @Override
@@ -173,14 +196,14 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
-    public User changeInfoAfterSignUp(String username, String currentUserId, String UserId, MultipartFile avatarFile) throws CustomException, IOException {
-        var existedUser = this.findById(currentUserId);
+    public User changeInfoAfterSignUp(String token, UserDTO userDTO, MultipartFile avatarFile, MultipartFile coverImageFile) throws CustomException, IOException {
+        var existedUser = this.findById(DataContextHelper.getUserId());
 
-        if (!Objects.equals(UserId, existedUser.getId())) {
+        if (!Objects.equals(DataContextHelper.getUserId(), existedUser.getId())) {
             throw new CustomException(ResponseCode.PARAMETER_VALUE_IS_INVALID);
         }
 
-        return this.updateUser(username, existedUser, avatarFile);
+        return this.updateUser(userDTO, existedUser, avatarFile, coverImageFile);
     }
 
     @Override
@@ -288,11 +311,40 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
+    public List<Notification> getNotification(String token, Integer index, Integer count) throws CustomException {
+        List<Notification> notifications = notificationRepository.findAllByUserId(DataContextHelper.getUserId());
+
+        Common.checkValidIndexCount(count, index, notifications.size());
+
+        return notifications.subList(index, index + count);
+    }
+
+    @Override
+    public UnreadNotificationOut setReadNotification(String token, String notificationId) throws CustomException {
+        Optional<Notification> notification = notificationRepository.findByNotificationId(notificationId);
+
+        if (notification.isPresent()) {
+            notification.get().setIsRead(true);
+
+            notificationRepository.save(notification.get());
+
+            List<Notification> unreadNotifications = notificationRepository.findAllByUserIdAndIsRead(DataContextHelper.getUserId(), false);
+
+            return UnreadNotificationOut.builder()
+                    .badge(unreadNotifications.size())
+                    .lastUpdated(LocalDateTime.now().toString())
+                    .build();
+        } else {
+            throw new CustomException(ResponseCode.NOT_FOUND);
+        }
+    }
+
+    @Override
     public List<Conversation> getListConversation(String id) throws CustomException {
         Conversation conversation = new Conversation();
         conversation.setId(UUID.randomUUID().toString());
 
-        conversation.setPartner(this.modelMapper.map(this.findById("e1642fd2-1512-4e16-aa2c-8e5a5bc333ee"), UserOut.class));
+        conversation.setPartner(this.modelMapper.map(this.findById("e1642fd2-1512-4e16-aa2c-8e5a5bc333ee"), BaseUserOut.class));
         Message message = new Message();
         message.setId(UUID.randomUUID().toString());
         message.setContent("test " + LocalDateTime.now().toString());
@@ -328,6 +380,16 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Override
     public void deleteConversation(DeleteConversation deleteConversation) throws CustomException {
         this.messageRepository.deleteById(deleteConversation.getId());
+    }
+
+    @Override
+    public void setDevToken(String token, String devType, String devToken) {
+        DevToken newDevToken = new DevToken();
+        newDevToken.setToken(token);
+        newDevToken.setDevToken(devToken);
+        newDevToken.setDevType(devType);
+
+        devTokenRepository.save(newDevToken);
     }
 
     private int compareVersions(String version1, String version2) {
@@ -395,13 +457,13 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         var users = this.userRepository.findAllById(listUserIds);
 
-        List<GetRequestedFriendOut> getRequestedFriendOutList = new ArrayList<>();
+        List<GetRequestedFriendOutBase> getRequestedFriendOutList = new ArrayList<>();
 
         users.removeIf(a -> Objects.equals(a.getId(), DataContextHelper.getUserId()));
 
         for (User user : users) {
             if (!CollectionUtils.isEmpty(user.getFriendLists())) {
-                GetRequestedFriendOut getRequestedFriendOut = new GetRequestedFriendOut();
+                GetRequestedFriendOutBase getRequestedFriendOut = new GetRequestedFriendOutBase();
                 int i = 0;
                 for (String mutualFriendId : user.getFriendLists()) {
                     if (findById(DataContextHelper.getUserId()).getFriendLists().contains(mutualFriendId)) {
@@ -453,10 +515,10 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 //                }
 //            }
 //        }
-        List<GetRequestedFriendOut> getRequestedFriendOutList = new ArrayList<>();
+        List<GetRequestedFriendOutBase> getRequestedFriendOutList = new ArrayList<>();
 
         for (User user : indexed) {
-            getRequestedFriendOutList.add(this.modelMapper.map(user, GetRequestedFriendOut.class));
+            getRequestedFriendOutList.add(this.modelMapper.map(user, GetRequestedFriendOutBase.class));
         }
 
         GetRequestedFriendOutWrapper getRequestedFriendOutWrapper = new GetRequestedFriendOutWrapper();
@@ -509,21 +571,31 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         return existedFriendRequest.getIsAccepted();
     }
 
-    private User updateUser(String username, User existedUser, MultipartFile avatarFile) throws IOException {
+    private User updateUser(UserDTO userDTO, User existedUser, MultipartFile avatarFile, MultipartFile coverImageFile) throws IOException {
 
 //        FileUtils fileUtils = new FileUtils();
 
 //        existedUser.setGender(updateUserDTO.getGender() != null ? updateUserDTO.getGender() : existedUser.getGender());
 //        existedUser.setBirthOfDate(updateUserDTO.getBirthOfDate() != null ? updateUserDTO.getBirthOfDate() : existedUser.getBirthOfDate());
 //        existedUser.setMobile(updateUserDTO.getMobile() != null ? updateUserDTO.getMobile() : existedUser.getMobile());
-        existedUser.setEmail(username != null ? username : existedUser.getEmail());
-        existedUser.setUsername(username != null ? username : existedUser.getEmail());
+        existedUser.setEmail(userDTO.getEmail() != null ? userDTO.getEmail() : existedUser.getEmail());
+        existedUser.setUsername(userDTO.getUsername() != null ? userDTO.getUsername() : existedUser.getEmail());
+        existedUser.setCity(userDTO.getCity() != null ? userDTO.getCity() : existedUser.getCity());
+        existedUser.setCountry(userDTO.getCountry() != null ? userDTO.getCountry() : existedUser.getCountry());
+        existedUser.setAddress(userDTO.getAddress() != null ? userDTO.getAddress() : existedUser.getAddress());
+        existedUser.setDescription(userDTO.getDescription() != null ? userDTO.getDescription() : existedUser.getDescription());
+
+        if (coverImageFile != null) {
+            existedUser.setCoverImage("http://cloud-cover-image/" + existedUser.getId());
+        }
 //        existedUser.setFirstName(updateUserDTO.getFirstName() != null ? updateUserDTO.getFirstName() : existedUser.getFirstName());
 //        existedUser.setLastName(updateUserDTO.getLastName() != null ? updateUserDTO.getLastName() : existedUser.getLastName());
 //        existedUser.setGithub(updateUserDTO.getGithub() != null ? updateUserDTO.getGithub() : existedUser.getGithub());
 //        existedUser.setFacebook(updateUserDTO.getFacebook() != null ? updateUserDTO.getFacebook() : existedUser.getFacebook());
 //        existedUser.setWebsite(updateUserDTO.getWebsite() != null ? updateUserDTO.getWebsite() : existedUser.getWebsite());
-        existedUser.setAvatar(existedUser.getId());
+        if (avatarFile != null) {
+            existedUser.setAvatar("http://cloud-avatar/" + existedUser.getId());
+        }
 //        existedUser.setCountry(updateUserDTO.getCountry() != null ? updateUserDTO.getCountry() : existedUser.getCountry());
 
 //        if(avatarFile != null && !avatarFile.isEmpty()){

@@ -5,6 +5,6 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class SuggestedFriendOut extends UserOut {
+public class SuggestedFriendOut extends BaseUserOut {
     private Integer sameFriends;
 }

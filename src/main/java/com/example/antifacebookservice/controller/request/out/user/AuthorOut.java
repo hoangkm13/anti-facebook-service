@@ -5,6 +5,6 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class AuthorOut extends UserOut{
+public class AuthorOut extends BaseUserOut {
     private int coins;
 }

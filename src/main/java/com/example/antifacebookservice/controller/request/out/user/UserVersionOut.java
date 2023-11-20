@@ -5,6 +5,6 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class UserVersionOut extends UserOut{
+public class UserVersionOut extends BaseUserOut {
     private Boolean active;
 }

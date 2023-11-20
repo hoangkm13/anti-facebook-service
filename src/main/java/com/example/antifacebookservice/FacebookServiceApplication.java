@@ -9,5 +9,4 @@ public class FacebookServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(FacebookServiceApplication.class, args);
     }
-
 }

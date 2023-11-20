@@ -110,4 +110,22 @@ public class UserController {
         userService.deleteConversation(deleteConversation);
         return ApiResponse.successWithResult(null, "Delete success!");
     }
+
+    @PostMapping("/get-notification")
+    public ApiResponse<?> getNotification(String token, Integer index, Integer count) throws CustomException {
+        return ApiResponse.successWithResult(userService.getNotification(token, index, count));
+    }
+
+    @PostMapping("/set-read-notification")
+    public ApiResponse<?> setReadNotification(String token, String notificationId) throws CustomException {
+        return ApiResponse.successWithResult(userService.setReadNotification(token, notificationId));
+    }
+
+    @PostMapping("/set-devtoken")
+    public ApiResponse<?> setDevToken(String token, String devType, String devToken) {
+        userService.setDevToken(token, devType, devToken);
+        return ApiResponse.successWithResult(null);
+    }
+
+
 }

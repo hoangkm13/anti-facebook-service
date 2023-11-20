@@ -5,6 +5,6 @@ import lombok.EqualsAndHashCode;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class BlockUserOut extends UserOut {
+public class BlockUserOut extends BaseUserOut {
 
 }
