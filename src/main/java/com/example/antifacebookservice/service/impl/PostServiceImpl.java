@@ -39,6 +39,7 @@ public class PostServiceImpl implements PostService {
     private final BlockRepository blockRepository;
     private final CategoryRepository categoryRepository;
     private final ReportPostRepository reportPostRepository;
+    private final PostVerifierRepository postVerifierRepository;
     private final SearchRepository searchRepository;
     private final MarkRepository markRepository;
     private final UserService userService;
@@ -112,6 +113,9 @@ public class PostServiceImpl implements PostService {
 
         int disappointed = reactRepository.countAllByFeelTypeAndPostId(FeelType.DISAPPOINTED, id);
         int kudos = reactRepository.countAllByFeelTypeAndPostId(FeelType.KUDOS, id);
+        int fake = postVerifierRepository.countAllByPostIdAndIsTrust(post.getId(), false);
+        int trust = postVerifierRepository.countAllByPostIdAndIsTrust(post.getId(), true);
+        boolean isRated = postVerifierRepository.existsByPostIdAndUserIdAndIsTrust(post.getId(), DataContextHelper.getUserId(), true);
 
         return PostDetailOut.builder()
                 .id(post.getId())
@@ -119,9 +123,9 @@ public class PostServiceImpl implements PostService {
                 .described(post.getDescribed())
                 .category(category)
                 .author(author)
-                .fake("").trust("").kudos(kudos).disappointed(disappointed)
-                .createdAt(LocalDateTime.now().toString()).modifiedAt(null)
-                .isRated("").isMarked(isMarked).isBlocked(isBlocked).banned(post.isRestriction())
+                .fake(fake).trust(trust).kudos(kudos).disappointed(disappointed)
+                .createdAt(LocalDateTime.now().toString()).modifiedAt(post.getModifiedAt())
+                .isRated(isRated).isMarked(isMarked).isBlocked(isBlocked).banned(post.isRestriction())
                 .canEdit(!post.isRestriction() && Objects.equals(author.getId(), DataContextHelper.getUserId()))
                 .url("http://anti.facebook.com/post?id=" + post.getId())
                 .images(imageRepository.findAllByPostId(post.getId()))

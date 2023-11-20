@@ -25,15 +25,15 @@ public class PostDetailOut {
 
     private String modifiedAt;
 
-    private String fake;
+    private Integer fake;
 
-    private String trust;
+    private Integer trust;
 
     private Integer kudos;
 
     private Integer disappointed;
 
-    private String isRated;
+    private Boolean isRated;
 
     private Boolean isMarked;
 
