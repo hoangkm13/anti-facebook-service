@@ -1,8 +1,6 @@
 package com.example.antifacebookservice.service.impl;
 
-import com.example.antifacebookservice.constant.FeelType;
-import com.example.antifacebookservice.constant.ReportType;
-import com.example.antifacebookservice.constant.ResponseCode;
+import com.example.antifacebookservice.constant.*;
 import com.example.antifacebookservice.controller.request.in.post.*;
 import com.example.antifacebookservice.controller.request.out.post.PostDetailOut;
 import com.example.antifacebookservice.controller.request.out.post.PostResponseCUD;
@@ -117,6 +115,12 @@ public class PostServiceImpl implements PostService {
         int trust = postVerifierRepository.countAllByPostIdAndIsTrust(post.getId(), true);
         boolean isRated = postVerifierRepository.existsByPostIdAndUserIdAndIsTrust(post.getId(), DataContextHelper.getUserId(), true);
 
+        boolean isUserAuthor = Objects.equals(post.getUserId(), DataContextHelper.getUserId());
+        boolean isAlreadyMark = markRepository.existsByPostIdAndUserId(id, post.getUserId());
+
+        MarkVerifyType markVerifyType = verifyMark(isUserAuthor, user.getCoins(), isAlreadyMark, user.getActive(), isBlocked);
+        RateVerifyType rateVerifyType = verifyRate(isUserAuthor, user.getCoins(), isAlreadyMark, user.getActive(), isBlocked);
+
         return PostDetailOut.builder()
                 .id(post.getId())
                 .name(post.getName())
@@ -127,6 +131,8 @@ public class PostServiceImpl implements PostService {
                 .createdAt(LocalDateTime.now().toString()).modifiedAt(post.getModifiedAt())
                 .isRated(isRated).isMarked(isMarked).isBlocked(isBlocked).banned(post.isRestriction())
                 .canEdit(!post.isRestriction() && Objects.equals(author.getId(), DataContextHelper.getUserId()))
+                .canMark(markVerifyType.getValue()).canRate(rateVerifyType.getValue())
+                .messages(List.of(markVerifyType.getDescribe(), rateVerifyType.getDescribe()))
                 .url("http://anti.facebook.com/post?id=" + post.getId())
                 .images(imageRepository.findAllByPostId(post.getId()))
                 .video(video)
@@ -308,5 +314,31 @@ public class PostServiceImpl implements PostService {
         } else {
             this.searchRepository.deleteAll();
         }
+    }
+
+    private MarkVerifyType verifyMark(boolean isUserAuthor, int coins, boolean isAlreadyMark, boolean isAuthorActive, boolean isBlocked) {
+        if (isUserAuthor) return MarkVerifyType.CANNOT_MARK_YOUR_OWN_POST;
+
+        if (coins <= 0) return MarkVerifyType.NOT_ENOUGH_COIN;
+
+        if (!isAuthorActive) return MarkVerifyType.AUTHOR_DEACTIVE;
+
+        if (isBlocked) return MarkVerifyType.CANNOT_MARK;
+
+        if (isAlreadyMark) return MarkVerifyType.ALREADY_MARK;
+        else return MarkVerifyType.NEW_MARK;
+    }
+
+    private RateVerifyType verifyRate(boolean isUserAuthor, int coins, boolean isAlreadyMark, boolean isAuthorActive, boolean isBlocked) {
+        if (isUserAuthor) return RateVerifyType.CANNOT_RATE_YOUR_OWN_POST;
+
+        if (coins <= 0) return RateVerifyType.NOT_ENOUGH_COIN;
+
+        if (!isAuthorActive) return RateVerifyType.AUTHOR_DEACTIVE;
+
+        if (isBlocked) return RateVerifyType.CANNOT_RATE;
+
+        if (isAlreadyMark) return RateVerifyType.ALREADY_RATE;
+        else return RateVerifyType.NEW_RATE;
     }
 }

@@ -43,7 +43,11 @@ public class PostDetailOut {
 
     private Boolean canEdit;
 
-    private String canRate;
+    private Integer canMark;
+
+    private Integer canRate;
+
+    private List<String> messages;
 
     private String url;
 
