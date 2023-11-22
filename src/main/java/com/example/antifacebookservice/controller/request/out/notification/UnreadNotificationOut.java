@@ -6,6 +6,6 @@ import lombok.Data;
 @Data
 @Builder
 public class UnreadNotificationOut {
-    private int badge;
+    private String badge;
     private String lastUpdated;
 }

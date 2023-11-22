@@ -14,7 +14,7 @@ public class UserInfoOut extends BaseUserOut{
     private String city;
     private String online;
     private String link;
-    private Long listing;
-    private Boolean isFriend;
-    private Integer coins;
+    private String listing;
+    private String isFriend;
+    private String coins;
 }

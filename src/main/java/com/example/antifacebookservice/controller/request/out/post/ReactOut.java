@@ -6,6 +6,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class ReactOut {
-    private int disappointed;
-    private int kudos;
+    private String disappointed;
+    private String kudos;
 }

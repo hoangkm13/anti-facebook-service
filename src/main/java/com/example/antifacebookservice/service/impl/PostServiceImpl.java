@@ -45,7 +45,7 @@ public class PostServiceImpl implements PostService {
 
 
     @Override
-    public PostResponseCUD createPost(CreatePostIn createPostIn, MultipartFile video) throws CustomException {
+    public PostResponseCUD createPost(CreatePostIn createPostIn, MultipartFile video, List<MultipartFile> images) throws CustomException {
         User user = userService.findByUsername(DataContextHelper.getUserName());
 
         if (user.getCoins() <= 0) {
@@ -66,8 +66,25 @@ public class PostServiceImpl implements PostService {
             String url = String.format("http://anti-facebook-cloud/%s-%s.com", vId, LocalDate.now());
             newVideo.setUrl(url);
             //
+            videoRepository.save(newVideo);
+        } else {
+            if (images.size() >= 4) {
+                throw new CustomException(ResponseCode.SERVER_ERROR);
+            }
+
+            for (var image : images) {
+                if (image != null) {
+                    Image img = new Image();
+                    img.setId(Common.generateUUID());
+                    img.setPostId(newPostId);
+                    String url = String.format("http://anti-facebook-cloud/%s-%s.com", img.getId(), LocalDate.now());
+                    img.setUrl(url);
+
+                    imageRepository.save(img);
+                }
+            }
         }
-        videoRepository.save(newVideo);
+
 
         postRepository.save(Post.builder()
                 .id(newPostId)
@@ -78,11 +95,11 @@ public class PostServiceImpl implements PostService {
                 .autoAccept(true)
                 .build());
 
-        int coinsLeft = user.getCoins() - 1;
+        int coinsLeft = user.getCoins() - 4;
         user.setCoins(coinsLeft);
         userRepository.save(user);
 
-        return new PostResponseCUD(newPostId, "http://anti.facebook.com/post?id=" + newPostId, coinsLeft);
+        return new PostResponseCUD(newPostId, "http://anti.facebook.com/post?id=" + newPostId, String.valueOf(coinsLeft));
     }
 
     @Override
@@ -127,11 +144,11 @@ public class PostServiceImpl implements PostService {
                 .described(post.getDescribed())
                 .category(category)
                 .author(author)
-                .fake(fake).trust(trust).kudos(kudos).disappointed(disappointed)
+                .fake(String.valueOf(fake)).trust(String.valueOf(trust)).kudos(String.valueOf(kudos)).disappointed(String.valueOf(disappointed))
                 .createdAt(LocalDateTime.now().toString()).modifiedAt(post.getModifiedAt())
-                .isRated(isRated).isMarked(isMarked).isBlocked(isBlocked).banned(post.isRestriction())
-                .canEdit(!post.isRestriction() && Objects.equals(author.getId(), DataContextHelper.getUserId()))
-                .canMark(markVerifyType.getValue()).canRate(rateVerifyType.getValue())
+                .isRated(String.valueOf(isRated)).isMarked(String.valueOf(isMarked)).isBlocked(String.valueOf(isBlocked)).banned(String.valueOf(post.isRestriction()))
+                .canEdit(String.valueOf(!post.isRestriction() && Objects.equals(author.getId(), DataContextHelper.getUserId())))
+                .canMark(String.valueOf(markVerifyType.getValue())).canRate(String.valueOf(rateVerifyType.getValue()))
                 .messages(List.of(markVerifyType.getDescribe(), rateVerifyType.getDescribe()))
                 .url("http://anti.facebook.com/post?id=" + post.getId())
                 .images(imageRepository.findAllByPostId(post.getId()))
@@ -170,13 +187,13 @@ public class PostServiceImpl implements PostService {
             });
         }
 
-        int coinLeft = user.getCoins() - 1;
-        user.setCoins(coinLeft);
+        int coinsLeft = user.getCoins() - 4;
+        user.setCoins(coinsLeft);
 
         userRepository.save(user);
         postRepository.save(updatePost);
 
-        return new PostResponseCUD(null, null, coinLeft);
+        return new PostResponseCUD(null, null, String.valueOf(coinsLeft));
     }
 
     @Override
@@ -193,11 +210,12 @@ public class PostServiceImpl implements PostService {
             throw new CustomException(ResponseCode.NOT_FOUND, "Post not found!");
         }
 
-        user.setCoins(user.getCoins() - 1);
+        int coinLeft = user.getCoins() - 1;
+        user.setCoins(coinLeft);
         userRepository.save(user);
         postRepository.delete(post.get());
 
-        return new PostResponseCUD(null, null, user.getCoins() - 1);
+        return new PostResponseCUD(null, null, String.valueOf(coinLeft));
     }
 
     @Override
@@ -226,6 +244,8 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public ReactOut reactPost(String token, String id, FeelType feelType) throws CustomException {
+        User user = userService.findByUsername(DataContextHelper.getUserName());
+
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
 
@@ -247,7 +267,10 @@ public class PostServiceImpl implements PostService {
         int disappointed = reactRepository.countAllByFeelTypeAndPostId(FeelType.DISAPPOINTED, id);
         int kudos = reactRepository.countAllByFeelTypeAndPostId(FeelType.KUDOS, id);
 
-        return new ReactOut(disappointed, kudos);
+        user.setCoins(user.getCoins() - 1);
+        userRepository.save(user);
+
+        return new ReactOut(String.valueOf(disappointed), String.valueOf(kudos));
     }
 
     @Override
@@ -285,10 +308,10 @@ public class PostServiceImpl implements PostService {
             var author = this.userService.findById(post.getUserId());
             searchListPostOut.setAuthor(author);
 
-            searchListPostOut.setMarkComment(this.markRepository.findByPostId(post.getId()).size());
-            searchListPostOut.setFeel(this.reactRepository.findByPostId(post.getId()).size());
+            searchListPostOut.setMarkComment(String.valueOf(this.markRepository.findByPostId(post.getId()).size()));
+            searchListPostOut.setFeel(String.valueOf(this.reactRepository.findByPostId(post.getId()).size()));
 
-            searchListPostOut.setIsFelt(this.reactRepository.findByPostIdAndUserId(post.getId(), DataContextHelper.getUserId()).isPresent());
+            searchListPostOut.setIsFelt(String.valueOf(this.reactRepository.findByPostIdAndUserId(post.getId(), DataContextHelper.getUserId()).isPresent()));
 
             searchListPostOuts.add(searchListPostOut);
         }

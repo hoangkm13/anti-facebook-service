@@ -8,5 +8,5 @@ import lombok.Data;
 public class PostResponseCUD {
     private String id;
     private String url;
-    private int coins;
+    private String coins;
 }

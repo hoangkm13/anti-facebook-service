@@ -122,7 +122,7 @@ public class MarkCommentServiceImpl implements MarkCommentService {
         Sort sort = Sort.by(direction, "createdAt");
         List<Mark> marks = markRepository.findMarksByChildComments(mark.getChildComments(), sort);
 
-        Common.checkValidIndexCount(index, count, marks.size());
+        Common.checkValidIndexCount(count, index, marks.size());
 
         marks.subList(index, index + count + 1)
                 .forEach(m -> {

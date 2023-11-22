@@ -69,7 +69,7 @@ public class BlockServiceImpl implements BlockService {
         List<String> blockedIds = blockRepository.findAllByBlockerId(userId)
                 .stream().map(BlockUser::getBlockedId).collect(Collectors.toList());
 
-        Common.checkValidIndexCount(index, count, blockedIds.size());
+        Common.checkValidIndexCount(count, index, blockedIds.size());
 
         List<BlockUserOut> blockUserOuts = new ArrayList<>();
         for (String id : blockedIds) {

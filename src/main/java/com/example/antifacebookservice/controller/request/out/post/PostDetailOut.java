@@ -25,27 +25,27 @@ public class PostDetailOut {
 
     private String modifiedAt;
 
-    private Integer fake;
+    private String fake;
 
-    private Integer trust;
+    private String trust;
 
-    private Integer kudos;
+    private String kudos;
 
-    private Integer disappointed;
+    private String disappointed;
 
-    private Boolean isRated;
+    private String isRated;
 
-    private Boolean isMarked;
+    private String isMarked;
 
-    private Boolean isBlocked;
+    private String isBlocked;
 
-    private Boolean banned;
+    private String banned;
 
-    private Boolean canEdit;
+    private String canEdit;
 
-    private Integer canMark;
+    private String canMark;
 
-    private Integer canRate;
+    private String canRate;
 
     private List<String> messages;
 

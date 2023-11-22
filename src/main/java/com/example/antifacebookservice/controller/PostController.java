@@ -24,8 +24,8 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping(path = "/create-new", consumes = {"multipart/form-data"})
-    public ApiResponse<?> createPost(@RequestPart CreatePostIn createPostIn, @RequestPart(required = false) MultipartFile video) throws CustomException {
-        PostResponseCUD createPostOut = postService.createPost(createPostIn, video);
+    public ApiResponse<?> createPost(@RequestPart CreatePostIn createPostIn, @RequestPart(required = false) MultipartFile video, @RequestPart(required = false) List<MultipartFile> images) throws CustomException {
+        PostResponseCUD createPostOut = postService.createPost(createPostIn, video, images);
         return ApiResponse.successWithResult(createPostOut);
     }
 

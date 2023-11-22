@@ -7,5 +7,5 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class GetRequestedFriendOutBase extends BaseUserOut {
-    private Integer sameFriends;
+    private String sameFriends;
 }

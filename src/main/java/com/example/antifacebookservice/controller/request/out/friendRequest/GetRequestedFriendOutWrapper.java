@@ -6,6 +6,6 @@ import java.util.List;
 
 @Data
 public class GetRequestedFriendOutWrapper {
-    private Integer total;
+    private String total;
     private List<GetRequestedFriendOutBase> request;
 }

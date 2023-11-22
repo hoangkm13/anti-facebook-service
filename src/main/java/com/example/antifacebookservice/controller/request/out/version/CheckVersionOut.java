@@ -10,7 +10,7 @@ import lombok.Data;
 public class CheckVersionOut {
     private AppVersion appVersion;
     private UserVersionOut user;
-    private Integer badge;
-    private Integer unreadMessage;
+    private String badge;
+    private String unreadMessage;
     private String now;
 }

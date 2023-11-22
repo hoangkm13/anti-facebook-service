@@ -14,7 +14,7 @@ import java.util.List;
 
 public interface PostService {
 
-    PostResponseCUD createPost(CreatePostIn createPostIn, MultipartFile video) throws CustomException;
+    PostResponseCUD createPost(CreatePostIn createPostIn, MultipartFile video, List<MultipartFile> images) throws CustomException;
 
     PostDetailOut getPostDetail(String token, String id) throws CustomException;
 

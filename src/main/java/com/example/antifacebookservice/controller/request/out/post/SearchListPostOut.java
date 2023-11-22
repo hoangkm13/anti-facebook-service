@@ -15,11 +15,11 @@ public class SearchListPostOut {
 
     private Video video;
 
-    private Integer feel;
+    private String feel;
 
-    private Integer markComment;
+    private String markComment;
 
-    private Boolean isFelt;
+    private String isFelt;
 
     private User author;
 

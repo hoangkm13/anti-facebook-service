@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 @Builder
 public class FriendRequestOut {
-    private Integer numberOfPendingFriendRequest;
+    private String numberOfPendingFriendRequest;
 }

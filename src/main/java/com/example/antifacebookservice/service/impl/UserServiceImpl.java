@@ -92,8 +92,8 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         UserInfoOut userInfoOut = this.modelMapper.map(user, UserInfoOut.class);
 
         List<String> friendList = user.getFriendLists();
-        userInfoOut.setListing(friendList != null ? (long) friendList.size() : 0L);
-        userInfoOut.setIsFriend(friendList != null && friendList.contains(DataContextHelper.getUserId()));
+        userInfoOut.setListing(String.valueOf(friendList != null ? (long) friendList.size() : 0L));
+        userInfoOut.setIsFriend(String.valueOf(friendList != null && friendList.contains(DataContextHelper.getUserId())));
 
         userInfoOut.setLink("http://anti-facebook-service/...");
 
@@ -116,6 +116,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setEmail(signUpDTO.getEmail());
         user.setActive(false);
         user.setPasswordHash(passwordEncoder.encode(signUpDTO.getPassword()));
+        user.setCoins(10);
         userRepository.save(user);
 
         getCodeVerify(signUpDTO.getEmail());
@@ -244,7 +245,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         var countFriendRequest = this.friendRequestRepository.countFriendRequestByUserSentId(DataContextHelper.getUserId());
 
         var result = FriendRequestOut.builder().build();
-        result.setNumberOfPendingFriendRequest(countFriendRequest);
+        result.setNumberOfPendingFriendRequest(String.valueOf(countFriendRequest));
         return result;
     }
 
@@ -295,13 +296,13 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (compareResult == 1) {
             UserVersionOut userVersionOut = new UserVersionOut();
             userVersionOut.setId(DataContextHelper.getUserId());
-            userVersionOut.setActive(DataContextHelper.isUserActive());
+            userVersionOut.setActive(String.valueOf(DataContextHelper.isUserActive()));
 
             return CheckVersionOut.builder()
                     .appVersion(appVersion)
                     .user(userVersionOut)
-                    .badge(0)
-                    .unreadMessage(0)
+                    .badge(String.valueOf(0))
+                    .unreadMessage(String.valueOf(0))
                     .now("")
                     .build();
         } else if (compareResult == -1) {
@@ -331,7 +332,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
             List<Notification> unreadNotifications = notificationRepository.findAllByUserIdAndIsRead(DataContextHelper.getUserId(), false);
 
             return UnreadNotificationOut.builder()
-                    .badge(unreadNotifications.size())
+                    .badge(String.valueOf(unreadNotifications.size()))
                     .lastUpdated(LocalDateTime.now().toString())
                     .build();
         } else {
@@ -347,7 +348,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         conversation.setPartner(this.modelMapper.map(this.findById("e1642fd2-1512-4e16-aa2c-8e5a5bc333ee"), BaseUserOut.class));
         Message message = new Message();
         message.setId(UUID.randomUUID().toString());
-        message.setContent("test " + LocalDateTime.now().toString());
+        message.setContent("test " + LocalDateTime.now());
         message.setUnread(new Random().nextBoolean());
         message.setCreated(LocalDateTime.now().toString());
 
@@ -432,7 +433,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                     }
                 }
                 if (i > 0) {
-                    suggestedFriendOut.setSameFriends(i);
+                    suggestedFriendOut.setSameFriends(String.valueOf(i));
                     this.modelMapper.map(user, suggestedFriendOut);
                     recommendFriends.add(suggestedFriendOut);
                 }
@@ -471,7 +472,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
                     }
                 }
                 if (i > 0) {
-                    getRequestedFriendOut.setSameFriends(i);
+                    getRequestedFriendOut.setSameFriends(String.valueOf(i));
                     this.modelMapper.map(user, getRequestedFriendOut);
                     getRequestedFriendOutList.add(getRequestedFriendOut);
                 }
@@ -480,7 +481,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         GetRequestedFriendOutWrapper getRequestedFriendOutWrapper = new GetRequestedFriendOutWrapper();
         getRequestedFriendOutWrapper.setRequest(getRequestedFriendOutList);
-        getRequestedFriendOutWrapper.setTotal(listUserIds.size());
+        getRequestedFriendOutWrapper.setTotal(String.valueOf(listUserIds.size()));
 
         return getRequestedFriendOutWrapper;
     }
@@ -523,7 +524,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         GetRequestedFriendOutWrapper getRequestedFriendOutWrapper = new GetRequestedFriendOutWrapper();
         getRequestedFriendOutWrapper.setRequest(getRequestedFriendOutList);
-        getRequestedFriendOutWrapper.setTotal(indexed.size());
+        getRequestedFriendOutWrapper.setTotal(String.valueOf(indexed.size()));
 
         return getRequestedFriendOutWrapper;
     }
