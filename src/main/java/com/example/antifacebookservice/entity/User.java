@@ -43,11 +43,22 @@ public class User {
 
     private String email;
 
-    private int coins;
+    private String description;
+
+    private String country;
+
+    private String city;
+
+    private String address;
+
+    private String coverImage;
+
+    private Integer coins;
 
     private Boolean active;
 
     private List<String> postLists;
+    private List<String> friendLists;
 
 //    private String country;
 

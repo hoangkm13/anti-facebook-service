@@ -2,10 +2,10 @@ package com.example.antifacebookservice.controller;
 
 import com.example.antifacebookservice.constant.FeelType;
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.auth.in.post.*;
-import com.example.antifacebookservice.controller.request.auth.out.post.PostDetailOut;
-import com.example.antifacebookservice.controller.request.auth.out.post.PostResponseCUD;
-import com.example.antifacebookservice.controller.request.auth.out.post.SearchListPostOut;
+import com.example.antifacebookservice.controller.request.in.post.*;
+import com.example.antifacebookservice.controller.request.out.post.PostDetailOut;
+import com.example.antifacebookservice.controller.request.out.post.PostResponseCUD;
+import com.example.antifacebookservice.controller.request.out.post.SearchListPostOut;
 import com.example.antifacebookservice.entity.Search;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.model.ApiResponse;
@@ -24,8 +24,8 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping(path = "/create-new", consumes = {"multipart/form-data"})
-    public ApiResponse<?> createPost(@RequestPart CreatePostIn createPostIn, @RequestPart(required = false) MultipartFile video) throws CustomException {
-        PostResponseCUD createPostOut = postService.createPost(createPostIn, video);
+    public ApiResponse<?> createPost(@RequestPart CreatePostIn createPostIn, @RequestPart(required = false) MultipartFile video, @RequestPart(required = false) List<MultipartFile> images) throws CustomException {
+        PostResponseCUD createPostOut = postService.createPost(createPostIn, video, images);
         return ApiResponse.successWithResult(createPostOut);
     }
 
@@ -62,7 +62,7 @@ public class PostController {
         return null;
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping()
     public ApiResponse<?> deletePost(String token, String id) throws CustomException {
         return ApiResponse.successWithResult(postService.deletePost(token, id));
     }

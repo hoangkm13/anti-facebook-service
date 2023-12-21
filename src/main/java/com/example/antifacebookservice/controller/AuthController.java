@@ -1,7 +1,8 @@
 package com.example.antifacebookservice.controller;
 
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.auth.*;
+import com.example.antifacebookservice.controller.request.in.user.*;
+import com.example.antifacebookservice.controller.request.out.user.UserInfoOut;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
 import com.example.antifacebookservice.entity.User;
@@ -70,11 +71,11 @@ public class AuthController {
         return ApiResponse.successWithResult(checkVerifyCodeResponse);
     }
 
-    @GetMapping(produces = "application/json")
-    public ApiResponse<UserDTO> getCurrentUser() throws CustomException, IOException {
-        User authentication = (User) SecurityContextHolder.getContext().getAuthentication().getCredentials();
-        User User = userService.findByUsername(authentication.getUsername());
-        return ApiResponse.successWithResult(modelMapper.map(User, UserDTO.class));
+    @PostMapping(value = "/get-user-info", produces = "application/json")
+    public ApiResponse<?> getUserInfo(String token, String userId) throws CustomException, IOException {
+//        User authentication = (User) SecurityContextHolder.getContext().getAuthentication().getCredentials();
+        UserInfoOut userInfo = userService.getUserInfo(token, userId);
+        return ApiResponse.successWithResult(userInfo);
     }
 
     @PostMapping(value = "/register", produces = "application/json")
@@ -83,11 +84,13 @@ public class AuthController {
         return ApiResponse.successWithResult(null, ResponseCode.OK.getMessage());
     }
 
-    @PutMapping(value = "/changeInfoAfterSignUp/{userId}", produces = "application/json")
-    public ApiResponse<UserDTO> changeInfoAfterSignUp(@PathVariable String userId, @Valid @RequestPart(required = false) String username, @RequestPart(required = false) MultipartFile avatarFile) throws CustomException, IOException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        var User = userService.changeInfoAfterSignUp(username, authentication.getPrincipal().toString(), userId, avatarFile);
-        return ApiResponse.successWithResult(modelMapper.map(User, UserDTO.class));
+    @PostMapping(value = "/changeInfoAfterSignUp", consumes = {"multipart/form-data"})
+    public ApiResponse<UserInfoOut> changeInfoAfterSignUp(@RequestPart(required = false) String token,
+                                                          @Valid @RequestPart(required = false) UserDTO userDTO,
+                                                          @RequestPart(required = false) MultipartFile avatarFile,
+                                                          @RequestPart(required = false) MultipartFile coverImageFile) throws CustomException, IOException {
+        var User = userService.changeInfoAfterSignUp(token, userDTO, avatarFile, coverImageFile);
+        return ApiResponse.successWithResult(modelMapper.map(User, UserInfoOut.class));
     }
 
     @PostMapping(value = "/changePassword/{userId}", produces = "application/json")
@@ -96,4 +99,6 @@ public class AuthController {
         var User = userService.resetPassword(resetPasswordDTO, String.valueOf(authentication.getPrincipal().toString()), userId);
         return ApiResponse.successWithResult(modelMapper.map(User, UserDTO.class));
     }
+
+
 }

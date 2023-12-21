@@ -1,14 +1,12 @@
 package com.example.antifacebookservice.service.impl;
 
-import com.example.antifacebookservice.constant.FeelType;
-import com.example.antifacebookservice.constant.ReportType;
-import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.auth.in.post.*;
-import com.example.antifacebookservice.controller.request.auth.out.post.PostDetailOut;
-import com.example.antifacebookservice.controller.request.auth.out.post.PostResponseCUD;
-import com.example.antifacebookservice.controller.request.auth.out.post.ReactOut;
-import com.example.antifacebookservice.controller.request.auth.out.post.SearchListPostOut;
-import com.example.antifacebookservice.controller.request.auth.out.user.AuthorOut;
+import com.example.antifacebookservice.constant.*;
+import com.example.antifacebookservice.controller.request.in.post.*;
+import com.example.antifacebookservice.controller.request.out.post.PostDetailOut;
+import com.example.antifacebookservice.controller.request.out.post.PostResponseCUD;
+import com.example.antifacebookservice.controller.request.out.post.ReactOut;
+import com.example.antifacebookservice.controller.request.out.post.SearchListPostOut;
+import com.example.antifacebookservice.controller.request.out.user.AuthorOut;
 import com.example.antifacebookservice.entity.*;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.helper.Common;
@@ -19,6 +17,7 @@ import com.example.antifacebookservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -39,6 +38,7 @@ public class PostServiceImpl implements PostService {
     private final BlockRepository blockRepository;
     private final CategoryRepository categoryRepository;
     private final ReportPostRepository reportPostRepository;
+    private final PostVerifierRepository postVerifierRepository;
     private final SearchRepository searchRepository;
     private final MarkRepository markRepository;
     private final UserService userService;
@@ -46,7 +46,7 @@ public class PostServiceImpl implements PostService {
 
 
     @Override
-    public PostResponseCUD createPost(CreatePostIn createPostIn, MultipartFile video) throws CustomException {
+    public PostResponseCUD createPost(CreatePostIn createPostIn, MultipartFile video, List<MultipartFile> images) throws CustomException {
         User user = userService.findByUsername(DataContextHelper.getUserName());
 
         if (user.getCoins() <= 0) {
@@ -67,8 +67,25 @@ public class PostServiceImpl implements PostService {
             String url = String.format("http://anti-facebook-cloud/%s-%s.com", vId, LocalDate.now());
             newVideo.setUrl(url);
             //
+            videoRepository.save(newVideo);
+        } else if(!CollectionUtils.isEmpty(images)){
+            if (images.size() >= 4) {
+                throw new CustomException(ResponseCode.SERVER_ERROR);
+            }
+
+            for (var image : images) {
+                if (image != null) {
+                    Image img = new Image();
+                    img.setId(Common.generateUUID());
+                    img.setPostId(newPostId);
+                    String url = String.format("http://anti-facebook-cloud/%s-%s.com", img.getId(), LocalDate.now());
+                    img.setUrl(url);
+
+                    imageRepository.save(img);
+                }
+            }
         }
-        videoRepository.save(newVideo);
+
 
         postRepository.save(Post.builder()
                 .id(newPostId)
@@ -79,11 +96,11 @@ public class PostServiceImpl implements PostService {
                 .autoAccept(true)
                 .build());
 
-        int coinsLeft = user.getCoins() - 1;
+        int coinsLeft = user.getCoins() - 4;
         user.setCoins(coinsLeft);
         userRepository.save(user);
 
-        return new PostResponseCUD(newPostId, "http://anti.facebook.com/post?id=" + newPostId, coinsLeft);
+        return new PostResponseCUD(newPostId, "http://anti.facebook.com/post?id=" + newPostId, String.valueOf(coinsLeft));
     }
 
     @Override
@@ -112,6 +129,15 @@ public class PostServiceImpl implements PostService {
 
         int disappointed = reactRepository.countAllByFeelTypeAndPostId(FeelType.DISAPPOINTED, id);
         int kudos = reactRepository.countAllByFeelTypeAndPostId(FeelType.KUDOS, id);
+        int fake = postVerifierRepository.countAllByPostIdAndIsTrust(post.getId(), false);
+        int trust = postVerifierRepository.countAllByPostIdAndIsTrust(post.getId(), true);
+        boolean isRated = postVerifierRepository.existsByPostIdAndUserIdAndIsTrust(post.getId(), DataContextHelper.getUserId(), true);
+
+        boolean isUserAuthor = Objects.equals(post.getUserId(), DataContextHelper.getUserId());
+        boolean isAlreadyMark = markRepository.existsByPostIdAndUserId(id, post.getUserId());
+
+        MarkVerifyType markVerifyType = verifyMark(isUserAuthor, user.getCoins(), isAlreadyMark, user.getActive(), isBlocked);
+        RateVerifyType rateVerifyType = verifyRate(isUserAuthor, user.getCoins(), isAlreadyMark, user.getActive(), isBlocked);
 
         return PostDetailOut.builder()
                 .id(post.getId())
@@ -119,10 +145,12 @@ public class PostServiceImpl implements PostService {
                 .described(post.getDescribed())
                 .category(category)
                 .author(author)
-                .fake("").trust("").kudos(kudos).disappointed(disappointed)
-                .createdAt(LocalDateTime.now().toString()).modifiedAt(null)
-                .isRated("").isMarked(isMarked).isBlocked(isBlocked).banned(post.isRestriction())
-                .canEdit(!post.isRestriction() && Objects.equals(author.getId(), DataContextHelper.getUserId()))
+                .fake(String.valueOf(fake)).trust(String.valueOf(trust)).kudos(String.valueOf(kudos)).disappointed(String.valueOf(disappointed))
+                .createdAt(LocalDateTime.now().toString()).modifiedAt(post.getModifiedAt())
+                .isRated(String.valueOf(isRated)).isMarked(String.valueOf(isMarked)).isBlocked(String.valueOf(isBlocked)).banned(String.valueOf(post.isRestriction()))
+                .canEdit(String.valueOf(!post.isRestriction() && Objects.equals(author.getId(), DataContextHelper.getUserId())))
+                .canMark(String.valueOf(markVerifyType.getValue())).canRate(String.valueOf(rateVerifyType.getValue()))
+                .messages(List.of(markVerifyType.getDescribe(), rateVerifyType.getDescribe()))
                 .url("http://anti.facebook.com/post?id=" + post.getId())
                 .images(imageRepository.findAllByPostId(post.getId()))
                 .video(video)
@@ -146,7 +174,7 @@ public class PostServiceImpl implements PostService {
         updatePost.setAutoAccept(updatePost.isAutoAccept());
         updatePost.setModifiedAt(LocalDateTime.now().toString());
 
-        if (updatePostIn.getImagesDel() != null) {
+        if (!CollectionUtils.isEmpty(updatePostIn.getImagesDel()    )) {
             updatePostIn.getImagesDel().forEach(imageId -> {
                 try {
                     Image image = imageRepository.findById(imageId).orElseThrow(() ->
@@ -160,13 +188,13 @@ public class PostServiceImpl implements PostService {
             });
         }
 
-        int coinLeft = user.getCoins() - 1;
-        user.setCoins(coinLeft);
+        int coinsLeft = user.getCoins() - 4;
+        user.setCoins(coinsLeft);
 
         userRepository.save(user);
         postRepository.save(updatePost);
 
-        return new PostResponseCUD(null, null, coinLeft);
+        return new PostResponseCUD(null, null, String.valueOf(coinsLeft));
     }
 
     @Override
@@ -183,11 +211,12 @@ public class PostServiceImpl implements PostService {
             throw new CustomException(ResponseCode.NOT_FOUND, "Post not found!");
         }
 
-        user.setCoins(user.getCoins() - 1);
+        int coinLeft = user.getCoins() - 1;
+        user.setCoins(coinLeft);
         userRepository.save(user);
         postRepository.delete(post.get());
 
-        return new PostResponseCUD(null, null, user.getCoins() - 1);
+        return new PostResponseCUD(null, null, String.valueOf(coinLeft));
     }
 
     @Override
@@ -198,7 +227,7 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
 
         if (reportPostRepository.existsByPostIdAndUserId(post.getId(), user.getId())) {
-            throw new CustomException(ResponseCode.WARNING, "Warning: Post is already reported!");
+            throw new CustomException(ResponseCode.EXISTED, "Post is already reported!");
         }
 
         if (post.isRestriction()) {
@@ -207,6 +236,7 @@ public class PostServiceImpl implements PostService {
 
         reportPostRepository.save(ReportPost.builder()
                 .postId(post.getId())
+                .userId(DataContextHelper.getUserId())
                 .reportType(ReportType.valueOf(subject))
                 .describe(details)
                 .createdAt(LocalDateTime.now().toString())
@@ -215,6 +245,8 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public ReactOut reactPost(String token, String id, FeelType feelType) throws CustomException {
+        User user = userService.findByUsername(DataContextHelper.getUserName());
+
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ResponseCode.NOT_FOUND, "Post not found!"));
 
@@ -236,7 +268,10 @@ public class PostServiceImpl implements PostService {
         int disappointed = reactRepository.countAllByFeelTypeAndPostId(FeelType.DISAPPOINTED, id);
         int kudos = reactRepository.countAllByFeelTypeAndPostId(FeelType.KUDOS, id);
 
-        return new ReactOut(disappointed, kudos);
+        user.setCoins(user.getCoins() - 1);
+        userRepository.save(user);
+
+        return new ReactOut(String.valueOf(disappointed), String.valueOf(kudos));
     }
 
     @Override
@@ -274,10 +309,10 @@ public class PostServiceImpl implements PostService {
             var author = this.userService.findById(post.getUserId());
             searchListPostOut.setAuthor(author);
 
-            searchListPostOut.setMarkComment(this.markRepository.findByPostId(post.getId()).size());
-            searchListPostOut.setFeel(this.reactRepository.findByPostId(post.getId()).size());
+            searchListPostOut.setMarkComment(String.valueOf(this.markRepository.findByPostId(post.getId()).size()));
+            searchListPostOut.setFeel(String.valueOf(this.reactRepository.findByPostId(post.getId()).size()));
 
-            searchListPostOut.setIsFelt(this.reactRepository.findByPostIdAndUserId(post.getId(), DataContextHelper.getUserId()).isPresent());
+            searchListPostOut.setIsFelt(String.valueOf(this.reactRepository.findByPostIdAndUserId(post.getId(), DataContextHelper.getUserId()).isPresent()));
 
             searchListPostOuts.add(searchListPostOut);
         }
@@ -303,5 +338,31 @@ public class PostServiceImpl implements PostService {
         } else {
             this.searchRepository.deleteAll();
         }
+    }
+
+    private MarkVerifyType verifyMark(boolean isUserAuthor, int coins, boolean isAlreadyMark, boolean isAuthorActive, boolean isBlocked) {
+        if (isUserAuthor) return MarkVerifyType.CANNOT_MARK_YOUR_OWN_POST;
+
+        if (coins <= 0) return MarkVerifyType.NOT_ENOUGH_COIN;
+
+        if (!isAuthorActive) return MarkVerifyType.AUTHOR_DEACTIVE;
+
+        if (isBlocked) return MarkVerifyType.CANNOT_MARK;
+
+        if (isAlreadyMark) return MarkVerifyType.ALREADY_MARK;
+        else return MarkVerifyType.NEW_MARK;
+    }
+
+    private RateVerifyType verifyRate(boolean isUserAuthor, int coins, boolean isAlreadyMark, boolean isAuthorActive, boolean isBlocked) {
+        if (isUserAuthor) return RateVerifyType.CANNOT_RATE_YOUR_OWN_POST;
+
+        if (coins <= 0) return RateVerifyType.NOT_ENOUGH_COIN;
+
+        if (!isAuthorActive) return RateVerifyType.AUTHOR_DEACTIVE;
+
+        if (isBlocked) return RateVerifyType.CANNOT_RATE;
+
+        if (isAlreadyMark) return RateVerifyType.ALREADY_RATE;
+        else return RateVerifyType.NEW_RATE;
     }
 }

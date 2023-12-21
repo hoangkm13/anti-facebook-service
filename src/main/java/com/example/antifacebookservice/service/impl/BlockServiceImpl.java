@@ -2,8 +2,8 @@ package com.example.antifacebookservice.service.impl;
 
 import com.example.antifacebookservice.constant.BlockType;
 import com.example.antifacebookservice.constant.ResponseCode;
-import com.example.antifacebookservice.controller.request.auth.in.user.BlockUserIn;
-import com.example.antifacebookservice.controller.request.auth.out.user.BlockUserOut;
+import com.example.antifacebookservice.controller.request.in.user.BlockUserIn;
+import com.example.antifacebookservice.controller.request.out.user.BlockUserOut;
 import com.example.antifacebookservice.entity.BlockUser;
 import com.example.antifacebookservice.entity.User;
 import com.example.antifacebookservice.exception.CustomException;
@@ -69,7 +69,7 @@ public class BlockServiceImpl implements BlockService {
         List<String> blockedIds = blockRepository.findAllByBlockerId(userId)
                 .stream().map(BlockUser::getBlockedId).collect(Collectors.toList());
 
-        Common.checkValidIndexCount(index, count, blockedIds.size());
+        Common.checkValidIndexCount(count, index, blockedIds.size());
 
         List<BlockUserOut> blockUserOuts = new ArrayList<>();
         for (String id : blockedIds) {

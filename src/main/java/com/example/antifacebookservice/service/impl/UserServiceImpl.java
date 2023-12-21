@@ -2,29 +2,32 @@ package com.example.antifacebookservice.service.impl;
 
 import com.example.antifacebookservice.constant.ResponseCode;
 import com.example.antifacebookservice.constant.SettingStatus;
-import com.example.antifacebookservice.controller.request.auth.CheckCodeVerifyRequest;
-import com.example.antifacebookservice.controller.request.auth.ResetPasswordDTO;
-import com.example.antifacebookservice.controller.request.auth.SignUpDTO;
-import com.example.antifacebookservice.controller.request.auth.in.setting.PushSettingIn;
-import com.example.antifacebookservice.controller.request.auth.in.version.CheckVersionIn;
-import com.example.antifacebookservice.controller.request.auth.out.user.UserVersionOut;
-import com.example.antifacebookservice.controller.request.auth.out.version.CheckVersionOut;
+import com.example.antifacebookservice.controller.request.in.friendRequest.FriendRequestIn;
+import com.example.antifacebookservice.controller.request.in.friendRequest.GetFriendRequest;
+import com.example.antifacebookservice.controller.request.in.friendRequest.ProcessFriendRequest;
+import com.example.antifacebookservice.controller.request.in.setting.PushSettingIn;
+import com.example.antifacebookservice.controller.request.in.user.*;
+import com.example.antifacebookservice.controller.request.in.version.CheckVersionIn;
+import com.example.antifacebookservice.controller.request.out.friendRequest.FriendRequestOut;
+import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOutBase;
+import com.example.antifacebookservice.controller.request.out.friendRequest.GetRequestedFriendOutWrapper;
+import com.example.antifacebookservice.controller.request.out.notification.UnreadNotificationOut;
+import com.example.antifacebookservice.controller.request.out.user.BaseUserOut;
+import com.example.antifacebookservice.controller.request.out.user.SuggestedFriendOut;
+import com.example.antifacebookservice.controller.request.out.user.UserInfoOut;
+import com.example.antifacebookservice.controller.request.out.user.UserVersionOut;
+import com.example.antifacebookservice.controller.request.out.version.CheckVersionOut;
 import com.example.antifacebookservice.controller.response.CheckVerifyCodeResponse;
 import com.example.antifacebookservice.controller.response.GetCodeVerifyResponse;
-import com.example.antifacebookservice.entity.AppVersion;
-import com.example.antifacebookservice.entity.CodeVerify;
-import com.example.antifacebookservice.entity.PushSetting;
-import com.example.antifacebookservice.entity.User;
+import com.example.antifacebookservice.entity.*;
 import com.example.antifacebookservice.exception.CustomException;
 import com.example.antifacebookservice.helper.Common;
-import com.example.antifacebookservice.repository.AppVersionRepository;
-import com.example.antifacebookservice.repository.CodeVerifyRepository;
-import com.example.antifacebookservice.repository.PushSettingRepository;
-import com.example.antifacebookservice.repository.UserRepository;
+import com.example.antifacebookservice.repository.*;
 import com.example.antifacebookservice.security.context.DataContextHelper;
 import com.example.antifacebookservice.service.UserService;
 import com.example.antifacebookservice.util.AuthUtils;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -34,6 +37,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -51,6 +55,13 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     private final AppVersionRepository appVersionRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
+    private final FriendRequestRepository friendRequestRepository;
+    private final NotificationRepository notificationRepository;
+    private final ModelMapper modelMapper;
+    private final ConversationRepository conversationRepository;
+    private final MessageRepository messageRepository;
+    private final DevTokenRepository devTokenRepository;
+    private final ImageRepository imageRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) {
@@ -76,6 +87,24 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     }
 
     @Override
+    public UserInfoOut getUserInfo(String token, String userId) throws CustomException {
+        User user = findById(userId);
+        UserInfoOut userInfoOut = this.modelMapper.map(user, UserInfoOut.class);
+
+        List<String> friendList = user.getFriendLists();
+        userInfoOut.setListing(String.valueOf(friendList != null ? (long) friendList.size() : 0L));
+        userInfoOut.setIsFriend(String.valueOf(friendList != null && friendList.contains(DataContextHelper.getUserId())));
+
+        userInfoOut.setLink("http://anti-facebook-service/...");
+
+        if (!Objects.equals(userId, DataContextHelper.getUserId())) {
+            userInfoOut.setCoins(null);
+        }
+
+        return userInfoOut;
+    }
+
+    @Override
     public void createUser(SignUpDTO signUpDTO) throws CustomException {
         if (userRepository.existsByEmail(signUpDTO.getEmail())) {
             throw new CustomException(ResponseCode.EXISTED);
@@ -87,6 +116,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         user.setEmail(signUpDTO.getEmail());
         user.setActive(false);
         user.setPasswordHash(passwordEncoder.encode(signUpDTO.getPassword()));
+        user.setCoins(10);
         userRepository.save(user);
 
         getCodeVerify(signUpDTO.getEmail());
@@ -160,21 +190,21 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     public User findById(String UserId) throws CustomException {
         var user = this.userRepository.findById(UserId);
         if (user.isEmpty()) {
-            throw new CustomException(ResponseCode.EXISTED);
+            throw new CustomException(ResponseCode.NOT_EXISTED);
         }
 
         return user.get();
     }
 
     @Override
-    public User changeInfoAfterSignUp(String username, String currentUserId, String UserId, MultipartFile avatarFile) throws CustomException, IOException {
-        var existedUser = this.findById(currentUserId);
+    public User changeInfoAfterSignUp(String token, UserDTO userDTO, MultipartFile avatarFile, MultipartFile coverImageFile) throws CustomException, IOException {
+        var existedUser = this.findById(DataContextHelper.getUserId());
 
-        if (!Objects.equals(UserId, existedUser.getId())) {
+        if (!Objects.equals(DataContextHelper.getUserId(), existedUser.getId())) {
             throw new CustomException(ResponseCode.PARAMETER_VALUE_IS_INVALID);
         }
 
-        return this.updateUser(username, existedUser, avatarFile);
+        return this.updateUser(userDTO, existedUser, avatarFile, coverImageFile);
     }
 
     @Override
@@ -193,6 +223,32 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
         return this.userRepository.save(existedUser);
     }
+
+    @Override
+    public FriendRequestOut sendFriendRequest(FriendRequestIn friendRequestIn) throws CustomException {
+        findById(friendRequestIn.getUserReceiveId());
+
+        var existedFriendRequest = this.friendRequestRepository.findByUserSentIdAndUserReceiveId(DataContextHelper.getUserId(), friendRequestIn.getUserReceiveId());
+
+        if (existedFriendRequest != null) {
+            throw new CustomException(ResponseCode.FRIEND_REQUEST_EXISTED);
+        }
+
+        FriendRequest friendRequest = new FriendRequest();
+        friendRequest.setUserSentId(DataContextHelper.getUserId());
+        friendRequest.setUserReceiveId(friendRequestIn.getUserReceiveId());
+        friendRequest.setIsAccepted(false);
+        friendRequest.setCreatedAt(LocalDateTime.now().toString());
+
+        this.friendRequestRepository.save(friendRequest);
+
+        var countFriendRequest = this.friendRequestRepository.countFriendRequestByUserSentId(DataContextHelper.getUserId());
+
+        var result = FriendRequestOut.builder().build();
+        result.setNumberOfPendingFriendRequest(String.valueOf(countFriendRequest));
+        return result;
+    }
+
 
     @Override
     public Map<String, SettingStatus> getPushSetting(String token) throws CustomException {
@@ -240,19 +296,101 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         if (compareResult == 1) {
             UserVersionOut userVersionOut = new UserVersionOut();
             userVersionOut.setId(DataContextHelper.getUserId());
-            userVersionOut.setActive(DataContextHelper.isUserActive());
+            userVersionOut.setActive(String.valueOf(DataContextHelper.isUserActive()));
 
             return CheckVersionOut.builder()
                     .appVersion(appVersion)
                     .user(userVersionOut)
-                    .badge(0)
-                    .unreadMessage(0)
+                    .badge(String.valueOf(0))
+                    .unreadMessage(String.valueOf(0))
                     .now("")
                     .build();
         } else if (compareResult == -1) {
             throw new CustomException(ResponseCode.SERVER_ERROR, "Something wrong!");
         }
         return null;
+    }
+
+    @Override
+    public List<Notification> getNotification(String token, Integer index, Integer count) throws CustomException {
+        List<Notification> notifications = notificationRepository.findAllByUserId(DataContextHelper.getUserId());
+
+        Common.checkValidIndexCount(count, index, notifications.size());
+
+        return notifications.subList(index, index + count);
+    }
+
+    @Override
+    public UnreadNotificationOut setReadNotification(String token, String notificationId) throws CustomException {
+        Optional<Notification> notification = notificationRepository.findByNotificationId(notificationId);
+
+        if (notification.isPresent()) {
+            notification.get().setIsRead(true);
+
+            notificationRepository.save(notification.get());
+
+            List<Notification> unreadNotifications = notificationRepository.findAllByUserIdAndIsRead(DataContextHelper.getUserId(), false);
+
+            return UnreadNotificationOut.builder()
+                    .badge(String.valueOf(unreadNotifications.size()))
+                    .lastUpdated(LocalDateTime.now().toString())
+                    .build();
+        } else {
+            throw new CustomException(ResponseCode.NOT_FOUND);
+        }
+    }
+
+    @Override
+    public List<Conversation> getListConversation(String id) throws CustomException {
+        Conversation conversation = new Conversation();
+        conversation.setId(UUID.randomUUID().toString());
+
+        conversation.setPartner(this.modelMapper.map(this.findById("e1642fd2-1512-4e16-aa2c-8e5a5bc333ee"), BaseUserOut.class));
+        Message message = new Message();
+        message.setId(UUID.randomUUID().toString());
+        message.setContent("test " + LocalDateTime.now());
+        message.setUnread(new Random().nextBoolean());
+        message.setCreated(LocalDateTime.now().toString());
+
+        conversation.setLastMessage(message);
+        this.messageRepository.save(message);
+
+        this.conversationRepository.save(conversation);
+
+        return this.conversationRepository.findAll();
+    }
+
+    @Override
+    public Conversation getConversation(GetConversation getConversation) throws CustomException {
+        return this.conversationRepository.findById(getConversation.getId()).get();
+    }
+
+    @Override
+    public Conversation setRead(GetConversation getConversation) throws CustomException {
+        var conv = this.conversationRepository.findById(getConversation.getId()).get();
+        conv.getLastMessage().setUnread(true);
+
+        return conv;
+    }
+
+    @Override
+    public void deleteMessage(DeleteMessage deleteMessage) throws CustomException {
+        this.messageRepository.deleteById(deleteMessage.getId());
+    }
+
+    @Override
+    public void deleteConversation(DeleteConversation deleteConversation) throws CustomException {
+        this.messageRepository.deleteById(deleteConversation.getId());
+    }
+
+    @Override
+    public void setDevToken(String token, Integer devType, String devToken) {
+        DevToken newDevToken = new DevToken();
+        newDevToken.setToken(token);
+        newDevToken.setDevToken(devToken);
+        newDevToken.setDevType(devType);
+
+        devTokenRepository.save(newDevToken);
     }
 
     private int compareVersions(String version1, String version2) {
@@ -275,21 +413,190 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         return 0; // versions are equal
     }
 
-    private User updateUser(String username, User existedUser, MultipartFile avatarFile) throws IOException {
+    @Override
+    public List<SuggestedFriendOut> getListSuggestedFriends(GetSuggestedFriends getSuggestedFriends) throws CustomException {
+        List<User> allUsers = this.userRepository.findAll();
+        allUsers.removeIf(a -> Objects.equals(a.getId(), DataContextHelper.getUserId()));
+
+        Common.checkValidIndexCount(getSuggestedFriends.getCount(), getSuggestedFriends.getIndex(), allUsers.size());
+
+        var indexed = allUsers.subList(getSuggestedFriends.getIndex(), getSuggestedFriends.getIndex() + getSuggestedFriends.getCount());
+
+        List<SuggestedFriendOut> recommendFriends = new ArrayList<>();
+        for (User user : indexed) {
+            if (!CollectionUtils.isEmpty(user.getFriendLists())) {
+                SuggestedFriendOut suggestedFriendOut = new SuggestedFriendOut();
+                int i = 0;
+                for (String mutualFriendId : user.getFriendLists()) {
+                    if (findById(DataContextHelper.getUserId()).getFriendLists().contains(mutualFriendId)) {
+                        i++;
+                    }
+                }
+                if (i > 0) {
+                    suggestedFriendOut.setSameFriends(String.valueOf(i));
+                    this.modelMapper.map(user, suggestedFriendOut);
+                    recommendFriends.add(suggestedFriendOut);
+                }
+            }
+
+        }
+        return recommendFriends;
+    }
+
+    @Override
+    public GetRequestedFriendOutWrapper getRequestedFriend(GetFriendRequest getFriendRequest) throws CustomException {
+        List<FriendRequest> friendRequests = this.friendRequestRepository.findByUserReceiveIdAndIsAccepted(DataContextHelper.getUserId(), false);
+
+        Common.checkValidIndexCount(getFriendRequest.getCount(), getFriendRequest.getIndex(), friendRequests.size());
+
+        var indexed = friendRequests.subList(getFriendRequest.getIndex(), getFriendRequest.getIndex() + getFriendRequest.getCount());
+
+        List<String> listUserIds = new ArrayList<>();
+        for (FriendRequest friendRequest : indexed) {
+            listUserIds.add(friendRequest.getUserSentId());
+        }
+
+        var users = this.userRepository.findAllById(listUserIds);
+
+        List<GetRequestedFriendOutBase> getRequestedFriendOutList = new ArrayList<>();
+
+        users.removeIf(a -> Objects.equals(a.getId(), DataContextHelper.getUserId()));
+
+        for (User user : users) {
+            if (!CollectionUtils.isEmpty(user.getFriendLists())) {
+                GetRequestedFriendOutBase getRequestedFriendOut = new GetRequestedFriendOutBase();
+                int i = 0;
+                for (String mutualFriendId : user.getFriendLists()) {
+                    if (findById(DataContextHelper.getUserId()).getFriendLists().contains(mutualFriendId)) {
+                        i++;
+                    }
+                }
+                if (i > 0) {
+                    getRequestedFriendOut.setSameFriends(String.valueOf(i));
+                    this.modelMapper.map(user, getRequestedFriendOut);
+                    getRequestedFriendOutList.add(getRequestedFriendOut);
+                }
+            }
+        }
+
+        GetRequestedFriendOutWrapper getRequestedFriendOutWrapper = new GetRequestedFriendOutWrapper();
+        getRequestedFriendOutWrapper.setRequest(getRequestedFriendOutList);
+        getRequestedFriendOutWrapper.setTotal(String.valueOf(listUserIds.size()));
+
+        return getRequestedFriendOutWrapper;
+    }
+
+    @Override
+    public GetRequestedFriendOutWrapper getUserFriends(GetFriendRequest getFriendRequest) throws CustomException {
+        List<User> result = this.userRepository.findAllById(userRepository.findById(DataContextHelper.getUserId()).get().getFriendLists());
+
+        Common.checkValidIndexCount(getFriendRequest.getCount(), getFriendRequest.getIndex(), result.size());
+
+        var indexed = result.subList(getFriendRequest.getIndex(), getFriendRequest.getIndex() + getFriendRequest.getCount());
+
+//        var users = this.userRepository.findAllById(userRepository.findById(DataContextHelper.getUserId()).get().getFriendLists());
+//
+//        users.removeIf(a -> Objects.equals(a.getId(), DataContextHelper.getUserId()));
+//
+//        List<GetRequestedFriendOut> getRequestedFriendOutList = new ArrayList<>();
+//
+//        for (User user : indexed) {
+//            if (!CollectionUtils.isEmpty(user.getFriendLists())) {
+//                GetRequestedFriendOut getRequestedFriendOut = new GetRequestedFriendOut();
+//                int i = 0;
+//                for (String mutualFriendId https://code-with-me.global.jetbrains.com/DiSn9OP4lehWwXOweyHxwQ#p=IU&fp=175D1F9F07492FD6D937EDF5BE96D90EEBA76538BC70EF78CD7C8B370A3F804B&newUi=true: user.getFriendLists()) {
+//                    if (findById(DataContextHelper.getUserId()).getFriendLists().contains(mutualFriendId)) {
+//                        i++;
+//                    }
+//                }
+//                if (i > 0) {
+//                    getRequestedFriendOut.setSameFriends(i);
+//                    this.modelMapper.map(user, getRequestedFriendOut);
+//                    getRequestedFriendOutList.add(getRequestedFriendOut);
+//                }
+//            }
+//        }
+        List<GetRequestedFriendOutBase> getRequestedFriendOutList = new ArrayList<>();
+
+        for (User user : indexed) {
+            getRequestedFriendOutList.add(this.modelMapper.map(user, GetRequestedFriendOutBase.class));
+        }
+
+        GetRequestedFriendOutWrapper getRequestedFriendOutWrapper = new GetRequestedFriendOutWrapper();
+        getRequestedFriendOutWrapper.setRequest(getRequestedFriendOutList);
+        getRequestedFriendOutWrapper.setTotal(String.valueOf(indexed.size()));
+
+        return getRequestedFriendOutWrapper;
+    }
+
+
+    @Override
+    public Boolean setAcceptFriend(ProcessFriendRequest processFriendRequest) throws CustomException {
+        var userSent = findById(processFriendRequest.getUserSentId());
+        var userReceive = findById(DataContextHelper.getUserId());
+
+        var existedFriendRequest = this.friendRequestRepository.findByUserSentIdAndUserReceiveId(processFriendRequest.getUserSentId(), DataContextHelper.getUserId());
+
+        if (existedFriendRequest == null) {
+            throw new CustomException(ResponseCode.FRIEND_REQUEST_NOT_EXISTED);
+        }
+
+        existedFriendRequest.setIsAccepted(processFriendRequest.getIsAccept());
+
+        this.friendRequestRepository.save(existedFriendRequest);
+
+        if (existedFriendRequest.getIsAccepted()) {
+            if (CollectionUtils.isEmpty(userSent.getFriendLists())) {
+                List<String> newFriends = new ArrayList<>();
+                newFriends.add(DataContextHelper.getUserId());
+
+                userSent.setFriendLists(newFriends);
+            } else {
+                userSent.getFriendLists().add(DataContextHelper.getUserId());
+            }
+
+            this.userRepository.save(userSent);
+
+            if (CollectionUtils.isEmpty(userReceive.getFriendLists())) {
+                List<String> newFriends = new ArrayList<>();
+                newFriends.add(processFriendRequest.getUserSentId());
+
+                userReceive.setFriendLists(newFriends);
+            } else {
+                userReceive.getFriendLists().add(processFriendRequest.getUserSentId());
+            }
+
+            this.userRepository.save(userReceive);
+        }
+
+        return existedFriendRequest.getIsAccepted();
+    }
+
+    private User updateUser(UserDTO userDTO, User existedUser, MultipartFile avatarFile, MultipartFile coverImageFile) throws IOException {
 
 //        FileUtils fileUtils = new FileUtils();
 
 //        existedUser.setGender(updateUserDTO.getGender() != null ? updateUserDTO.getGender() : existedUser.getGender());
 //        existedUser.setBirthOfDate(updateUserDTO.getBirthOfDate() != null ? updateUserDTO.getBirthOfDate() : existedUser.getBirthOfDate());
 //        existedUser.setMobile(updateUserDTO.getMobile() != null ? updateUserDTO.getMobile() : existedUser.getMobile());
-        existedUser.setEmail(username != null ? username : existedUser.getEmail());
-        existedUser.setUsername(username != null ? username : existedUser.getEmail());
+        existedUser.setEmail(userDTO.getEmail() != null ? userDTO.getEmail() : existedUser.getEmail());
+        existedUser.setUsername(userDTO.getUsername() != null ? userDTO.getUsername() : existedUser.getEmail());
+        existedUser.setCity(userDTO.getCity() != null ? userDTO.getCity() : existedUser.getCity());
+        existedUser.setCountry(userDTO.getCountry() != null ? userDTO.getCountry() : existedUser.getCountry());
+        existedUser.setAddress(userDTO.getAddress() != null ? userDTO.getAddress() : existedUser.getAddress());
+        existedUser.setDescription(userDTO.getDescription() != null ? userDTO.getDescription() : existedUser.getDescription());
+
+        if (coverImageFile != null) {
+            existedUser.setCoverImage("http://cloud-cover-image/" + existedUser.getId());
+        }
 //        existedUser.setFirstName(updateUserDTO.getFirstName() != null ? updateUserDTO.getFirstName() : existedUser.getFirstName());
 //        existedUser.setLastName(updateUserDTO.getLastName() != null ? updateUserDTO.getLastName() : existedUser.getLastName());
 //        existedUser.setGithub(updateUserDTO.getGithub() != null ? updateUserDTO.getGithub() : existedUser.getGithub());
 //        existedUser.setFacebook(updateUserDTO.getFacebook() != null ? updateUserDTO.getFacebook() : existedUser.getFacebook());
 //        existedUser.setWebsite(updateUserDTO.getWebsite() != null ? updateUserDTO.getWebsite() : existedUser.getWebsite());
-        existedUser.setAvatar(existedUser.getId());
+        if (avatarFile != null) {
+            existedUser.setAvatar("http://cloud-avatar/" + existedUser.getId());
+        }
 //        existedUser.setCountry(updateUserDTO.getCountry() != null ? updateUserDTO.getCountry() : existedUser.getCountry());
 
 //        if(avatarFile != null && !avatarFile.isEmpty()){
