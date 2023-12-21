@@ -62,7 +62,7 @@ public class PostController {
         return null;
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping()
     public ApiResponse<?> deletePost(String token, String id) throws CustomException {
         return ApiResponse.successWithResult(postService.deletePost(token, id));
     }

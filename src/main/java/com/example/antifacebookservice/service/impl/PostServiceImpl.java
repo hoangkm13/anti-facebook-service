@@ -17,6 +17,7 @@ import com.example.antifacebookservice.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -67,7 +68,7 @@ public class PostServiceImpl implements PostService {
             newVideo.setUrl(url);
             //
             videoRepository.save(newVideo);
-        } else {
+        } else if(!CollectionUtils.isEmpty(images)){
             if (images.size() >= 4) {
                 throw new CustomException(ResponseCode.SERVER_ERROR);
             }
@@ -173,7 +174,7 @@ public class PostServiceImpl implements PostService {
         updatePost.setAutoAccept(updatePost.isAutoAccept());
         updatePost.setModifiedAt(LocalDateTime.now().toString());
 
-        if (updatePostIn.getImagesDel() != null) {
+        if (!CollectionUtils.isEmpty(updatePostIn.getImagesDel()    )) {
             updatePostIn.getImagesDel().forEach(imageId -> {
                 try {
                     Image image = imageRepository.findById(imageId).orElseThrow(() ->
